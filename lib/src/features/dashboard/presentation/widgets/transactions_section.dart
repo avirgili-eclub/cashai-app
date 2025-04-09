@@ -1,77 +1,17 @@
 import 'dart:developer' as developer;
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart'; // For date formatting
 import '../../../../core/utils/emoji_formatter.dart';
+import '../../../../core/utils/color_utils.dart';
 import '../../domain/entities/recent_transaction.dart';
 import '../controllers/transactions_controller.dart';
 
-class TransactionsSection extends ConsumerStatefulWidget {
+class TransactionsSection extends ConsumerWidget {
   const TransactionsSection({super.key});
 
   @override
-  ConsumerState<TransactionsSection> createState() =>
-      _TransactionsSectionState();
-}
-
-class _TransactionsSectionState extends ConsumerState<TransactionsSection> {
-  final ScrollController _scrollController = ScrollController();
-  int _visibleItemCount = 5; // Default to showing 5 items initially
-
-  @override
-  void initState() {
-    super.initState();
-    _scrollController.addListener(_onScroll);
-  }
-
-  @override
-  void dispose() {
-    _scrollController.removeListener(_onScroll);
-    _scrollController.dispose();
-    super.dispose();
-  }
-
-  void _onScroll() {
-    if (_scrollController.hasClients) {
-      final maxScroll = _scrollController.position.maxScrollExtent;
-      final currentScroll = _scrollController.offset;
-      final scrollPercentage = currentScroll / maxScroll;
-
-      if (_scrollController.position.userScrollDirection ==
-          ScrollDirection.reverse) {
-        // Scrolling down - gradually show more items
-        if (currentScroll > 50 && _visibleItemCount < 10) {
-          // Calculate how many more items to show (up to 10)
-          int newCount = 5 + (scrollPercentage * 5).round();
-          newCount = newCount.clamp(5, 10);
-
-          if (newCount != _visibleItemCount) {
-            setState(() {
-              _visibleItemCount = newCount;
-            });
-          }
-        }
-      } else if (_scrollController.position.userScrollDirection ==
-          ScrollDirection.forward) {
-        // Scrolling up - gradually hide items again
-        if (currentScroll < maxScroll * 0.5 && _visibleItemCount > 5) {
-          // Calculate how many items to show when scrolling back up
-          int newCount = 10 - ((1 - scrollPercentage) * 5).round();
-          newCount = newCount.clamp(5, 10);
-
-          if (newCount != _visibleItemCount) {
-            setState(() {
-              _visibleItemCount = newCount;
-            });
-          }
-        }
-      }
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     developer.log('Building TransactionsSection widget',
         name: 'transactions_section');
     final transactionsAsync = ref.watch(transactionsControllerProvider);
@@ -128,27 +68,18 @@ class _TransactionsSectionState extends ConsumerState<TransactionsSection> {
           );
         }
 
-        // Determine how many items to show (max 10)
-        final totalItems = transactions.length;
-        final itemsToShow = _visibleItemCount.clamp(0, totalItems);
-
-        developer.log('Showing $itemsToShow of $totalItems transactions',
+        // Log how many transactions we have
+        developer.log('Got ${transactions.length} transactions',
             name: 'transactions_section');
 
         // Set a fixed height for the list to allow proper scrolling within the Column
         return SizedBox(
           height: 280, // Approximate height for 5 items
           child: ListView.builder(
-            controller: _scrollController,
             physics: const AlwaysScrollableScrollPhysics(),
-            itemCount: itemsToShow,
+            itemCount: transactions.length,
             itemBuilder: (context, index) {
-              // Animate the opacity of the extra items for a smooth appearance
-              final opacity = index < 5 ? 1.0 : ((index - 4) / 5);
-              return Opacity(
-                opacity: opacity,
-                child: _buildTransactionItem(context, transactions[index]),
-              );
+              return _buildTransactionItem(context, transactions[index]);
             },
           ),
         );
@@ -185,6 +116,17 @@ class _TransactionsSectionState extends ConsumerState<TransactionsSection> {
       loggerName: 'transactions_section',
     );
 
+    // Get color from transaction or use default based on transaction type
+    final Color defaultColor = isDebit
+        ? const Color(0xFFFFCDD2) // Light red for expenses
+        : const Color(0xFFC8E6C9); // Light green for income
+
+    final Color containerColor = ColorUtils.fromHex(
+      transaction.color,
+      defaultColor: defaultColor.withOpacity(0.5),
+      loggerName: 'transactions_section',
+    );
+
     return GestureDetector(
       onTap: () {
         // Navigate to transaction details page (to be implemented)
@@ -206,7 +148,7 @@ class _TransactionsSectionState extends ConsumerState<TransactionsSection> {
               width: 40,
               height: 40,
               decoration: BoxDecoration(
-                color: (isDebit ? Colors.red : Colors.green).withOpacity(0.1),
+                color: containerColor,
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Center(child: emojiWidget),

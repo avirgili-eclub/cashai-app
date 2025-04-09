@@ -2,6 +2,7 @@ import 'dart:developer' as developer;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/utils/emoji_formatter.dart';
+import '../../../../core/utils/color_utils.dart';
 import '../../domain/entities/top_category.dart';
 import '../controllers/categories_controller.dart';
 
@@ -100,6 +101,13 @@ class CategoriesSection extends ConsumerWidget {
       loggerName: 'categories_section',
     );
 
+    // Parse the color from the hex string or use a default pastel blue
+    final Color containerColor = ColorUtils.fromHex(
+      category.color,
+      defaultColor: const Color(0xFFBBDEFB), // Light pastel blue
+      loggerName: 'categories_section',
+    );
+
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(16),
@@ -113,7 +121,7 @@ class CategoriesSection extends ConsumerWidget {
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-              color: Colors.blue.withOpacity(0.1),
+              color: containerColor,
               borderRadius: BorderRadius.circular(8),
             ),
             child: Center(child: emojiWidget),

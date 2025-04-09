@@ -9,7 +9,7 @@ import '../widgets/quick_action_section.dart';
 import '../widgets/categories_section.dart';
 import '../widgets/transactions_section.dart';
 import '../widgets/bottom_nav_bar.dart';
-import '../widgets/chat_agent_button.dart';
+import '../widgets/send_audio_button.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({Key? key}) : super(key: key);
@@ -25,7 +25,7 @@ class DashboardScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Dashboard'),
+        title: const Text('Cash AI'),
         actions: [
           // This is just for testing purposes - you'd remove this in production
           IconButton(
@@ -61,13 +61,21 @@ class DashboardScreen extends ConsumerWidget {
               const SizedBox(height: 24),
               const TransactionsSection(),
               // Extra space at bottom for navigation bar
-              const SizedBox(height: 80),
+              const SizedBox(height: 60),
             ],
           ),
         ),
       ),
-      bottomNavigationBar: const BottomNavBar(),
-      floatingActionButton: const ChatAgentButton(),
+      bottomNavigationBar: Container(
+        // Adding a container around BottomNavBar to control its height
+        height: 80, // Increased height (was typically around 56-60px)
+        child: const BottomNavBar(),
+      ),
+      floatingActionButton: Transform.translate(
+        // Offsetting the button position
+        offset: const Offset(0, 20), // Positive y value moves it down
+        child: const SendAudioButton(),
+      ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
     );
   }

@@ -5,6 +5,7 @@ class TopCategory {
   final double amount;
   final double percentage;
   final int expenseCount;
+  final String? color; // Added color field
 
   TopCategory({
     required this.id,
@@ -13,6 +14,7 @@ class TopCategory {
     required this.amount,
     required this.percentage,
     required this.expenseCount,
+    this.color,
   });
 
   factory TopCategory.fromJson(Map<String, dynamic> json) {
@@ -23,6 +25,7 @@ class TopCategory {
       amount: (json['amount'] as num).toDouble(),
       percentage: (json['percentage'] as num).toDouble(),
       expenseCount: (json['expenseCount'] as num).toInt(),
+      color: json['color'] as String?,
     );
   }
 }
