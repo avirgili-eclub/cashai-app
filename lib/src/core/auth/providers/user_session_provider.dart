@@ -13,7 +13,7 @@ class UserSessionNotifier extends _$UserSessionNotifier {
   @override
   UserSession build() {
     // Default userId for development/testing
-    return UserSession(userId: '2');
+    return UserSession(userId: '3');
   }
 
   void setUserId(String userId) {

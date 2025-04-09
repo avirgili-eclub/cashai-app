@@ -1,6 +1,7 @@
 import 'dart:developer' as developer;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/utils/emoji_formatter.dart';
 import '../../domain/entities/top_category.dart';
 import '../controllers/categories_controller.dart';
 
@@ -91,6 +92,14 @@ class CategoriesSection extends ConsumerWidget {
   }
 
   Widget _buildCategoryItem(BuildContext context, TopCategory category) {
+    // Use the EmojiFormatter utility class to handle emoji formatting
+    Widget emojiWidget = EmojiFormatter.emojiToWidget(
+      category.emoji,
+      fallbackIcon: Icons.category,
+      fallbackColor: Colors.blue,
+      loggerName: 'categories_section',
+    );
+
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(16),
@@ -107,9 +116,7 @@ class CategoriesSection extends ConsumerWidget {
               color: Colors.blue.withOpacity(0.1),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Center(
-              child: Text(category.emoji, style: const TextStyle(fontSize: 24)),
-            ),
+            child: Center(child: emojiWidget),
           ),
           const SizedBox(width: 12),
           Expanded(

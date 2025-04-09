@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../domain/entities/balance.dart';
 import '../../domain/entities/top_category.dart';
+import '../../domain/entities/recent_transaction.dart';
 
 part 'firebase_balance_datasource.g.dart';
 
@@ -74,6 +75,37 @@ class FirebaseBalanceDataSource {
     } catch (e, stack) {
       developer.log('Network error: $e',
           name: 'categories_datasource', error: e, stackTrace: stack);
+      throw Exception('Failed to connect to the server: $e');
+    }
+  }
+
+  Future<List<RecentTransaction>> getRecentTransactions(String userId) async {
+    final url = '$baseUrl/users/$userId/recent-transactions';
+    developer.log('Making API request to: $url',
+        name: 'transactions_datasource');
+
+    try {
+      final response = await client.get(
+        Uri.parse(url),
+        headers: {'Content-Type': 'application/json'},
+      );
+
+      developer.log('Response status code: ${response.statusCode}',
+          name: 'transactions_datasource');
+
+      if (response.statusCode == 200) {
+        developer.log('Response body: ${response.body}',
+            name: 'transactions_datasource');
+        final List<dynamic> data = json.decode(response.body);
+        return data.map((item) => RecentTransaction.fromJson(item)).toList();
+      } else {
+        developer.log('Error response: ${response.body}',
+            name: 'transactions_datasource');
+        throw Exception('Failed to load transactions: ${response.statusCode}');
+      }
+    } catch (e, stack) {
+      developer.log('Network error: $e',
+          name: 'transactions_datasource', error: e, stackTrace: stack);
       throw Exception('Failed to connect to the server: $e');
     }
   }
