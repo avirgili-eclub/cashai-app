@@ -6,7 +6,7 @@ part of 'balance_controller.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$balanceControllerHash() => r'6efa489326ada1eb3e5ebca53db18ac3553f23d7';
+String _$balanceControllerHash() => r'04d87d856a322383d8b15d9dcbd329f60c21e59f';
 
 /// See also [BalanceController].
 @ProviderFor(BalanceController)

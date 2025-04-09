@@ -1,28 +1,27 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'balance_repository_impl.dart';
+part of 'categories_controller.dart';
 
 // **************************************************************************
 // RiverpodGenerator
 // **************************************************************************
 
-String _$balanceRepositoryImplHash() =>
-    r'a2a7c672c073c2ea75c792b628cb09acea329600';
+String _$categoriesControllerHash() =>
+    r'df9f025b7fcf81decd189909bbb97bc136bdeba3';
 
-/// See also [balanceRepositoryImpl].
-@ProviderFor(balanceRepositoryImpl)
-final balanceRepositoryImplProvider = Provider<BalanceRepository>.internal(
-  balanceRepositoryImpl,
-  name: r'balanceRepositoryImplProvider',
+/// See also [CategoriesController].
+@ProviderFor(CategoriesController)
+final categoriesControllerProvider = AutoDisposeAsyncNotifierProvider<
+    CategoriesController, List<TopCategory>>.internal(
+  CategoriesController.new,
+  name: r'categoriesControllerProvider',
   debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
       ? null
-      : _$balanceRepositoryImplHash,
+      : _$categoriesControllerHash,
   dependencies: null,
   allTransitiveDependencies: null,
 );
 
-@Deprecated('Will be removed in 3.0. Use Ref instead')
-// ignore: unused_element
-typedef BalanceRepositoryImplRef = ProviderRef<BalanceRepository>;
+typedef _$CategoriesController = AutoDisposeAsyncNotifier<List<TopCategory>>;
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package

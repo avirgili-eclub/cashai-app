@@ -1,14 +1,20 @@
+import 'dart:developer' as developer;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/entities/balance.dart';
 import '../controllers/balance_controller.dart';
 
 class BalanceCard extends ConsumerWidget {
-  const BalanceCard({super.key});
+  final Function()? onRefresh;
+
+  const BalanceCard({super.key, this.onRefresh});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    developer.log('Building BalanceCard widget', name: 'balance_card');
     final balanceAsync = ref.watch(balanceControllerProvider);
+    developer.log('Balance state: ${balanceAsync.toString()}',
+        name: 'balance_card');
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0),
@@ -19,15 +25,45 @@ class BalanceCard extends ConsumerWidget {
         ),
         padding: const EdgeInsets.all(16.0),
         child: balanceAsync.when(
-          data: (balance) => _buildBalanceContent(context, balance),
-          loading: () => const Center(
-              child: CircularProgressIndicator(color: Colors.white)),
-          error: (error, stack) => Center(
-            child: Text(
-              'Error loading balance',
-              style: const TextStyle(color: Colors.white),
-            ),
-          ),
+          data: (balance) {
+            developer.log('Displaying balance data: ${balance.totalBalance}',
+                name: 'balance_card');
+            return _buildBalanceContent(context, balance);
+          },
+          loading: () {
+            developer.log('Showing loading state', name: 'balance_card');
+            return const SizedBox(
+              height: 200,
+              child:
+                  Center(child: CircularProgressIndicator(color: Colors.white)),
+            );
+          },
+          error: (error, stack) {
+            developer.log('Error in balance data: $error',
+                name: 'balance_card', error: error, stackTrace: stack);
+            return SizedBox(
+              height: 200,
+              child: Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'Error loading balance: ${error.toString()}',
+                      style: const TextStyle(color: Colors.white),
+                      textAlign: TextAlign.center,
+                    ),
+                    if (onRefresh != null)
+                      TextButton.icon(
+                        icon: const Icon(Icons.refresh, color: Colors.white70),
+                        label: const Text('Retry',
+                            style: TextStyle(color: Colors.white)),
+                        onPressed: onRefresh,
+                      ),
+                  ],
+                ),
+              ),
+            );
+          },
         ),
       ),
     );
@@ -37,13 +73,22 @@ class BalanceCard extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Balance Total',
-          style: TextStyle(color: Colors.white70, fontSize: 14),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text(
+              'Balance Total',
+              style: TextStyle(color: Colors.white70, fontSize: 14),
+            ),
+            Text(
+              '${balance.month}/${balance.year}',
+              style: const TextStyle(color: Colors.white70, fontSize: 14),
+            ),
+          ],
         ),
         const SizedBox(height: 4),
         Text(
-          'Gs. ${balance.total.toStringAsFixed(0)}',
+          '${balance.currency} ${balance.totalBalance.toStringAsFixed(0)}',
           style: const TextStyle(
             color: Colors.white,
             fontSize: 28,
@@ -56,7 +101,7 @@ class BalanceCard extends ConsumerWidget {
             _buildBalanceItem(
               context,
               'Ingresos',
-              balance.income,
+              balance.totalIncome,
               Icons.arrow_downward,
             ),
             const SizedBox(width: 24),
@@ -68,6 +113,10 @@ class BalanceCard extends ConsumerWidget {
             ),
           ],
         ),
+        const SizedBox(height: 16),
+        const Divider(color: Colors.white30, height: 1),
+        const SizedBox(height: 16),
+        _buildIncomeDetails(context, balance),
       ],
     );
   }
@@ -117,6 +166,53 @@ class BalanceCard extends ConsumerWidget {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildIncomeDetails(BuildContext context, Balance balance) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Detalles de Ingresos',
+          style: TextStyle(color: Colors.white70, fontSize: 14),
+        ),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Expanded(
+              child: _buildIncomeItem(context, 'Ingreso Mensual',
+                  balance.monthlyIncome, balance.currency),
+            ),
+            Expanded(
+              child: _buildIncomeItem(context, 'Ingreso Extra',
+                  balance.extraIncome, balance.currency),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildIncomeItem(
+      BuildContext context, String title, double amount, String currency) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: const TextStyle(color: Colors.white70, fontSize: 12),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          '$currency ${amount.toStringAsFixed(0)}',
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ],
     );
   }
 }
