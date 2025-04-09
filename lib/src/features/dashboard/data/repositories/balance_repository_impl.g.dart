@@ -1,29 +1,28 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'onboarding_repository.dart';
+part of 'balance_repository_impl.dart';
 
 // **************************************************************************
 // RiverpodGenerator
 // **************************************************************************
 
-String _$onboardingRepositoryHash() =>
-    r'445c529dd1ac7515d8be0abd6159af6958ff3c5c';
+String _$balanceRepositoryImplHash() =>
+    r'3729637b3ecf4f24609e688c558f13d08bf2a6f3';
 
-/// See also [onboardingRepository].
-@ProviderFor(onboardingRepository)
-final onboardingRepositoryProvider =
-    FutureProvider<OnboardingRepository>.internal(
-  onboardingRepository,
-  name: r'onboardingRepositoryProvider',
+/// See also [balanceRepositoryImpl].
+@ProviderFor(balanceRepositoryImpl)
+final balanceRepositoryImplProvider = Provider<BalanceRepository>.internal(
+  balanceRepositoryImpl,
+  name: r'balanceRepositoryImplProvider',
   debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
       ? null
-      : _$onboardingRepositoryHash,
+      : _$balanceRepositoryImplHash,
   dependencies: null,
   allTransitiveDependencies: null,
 );
 
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
-typedef OnboardingRepositoryRef = FutureProviderRef<OnboardingRepository>;
+typedef BalanceRepositoryImplRef = ProviderRef<BalanceRepository>;
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package

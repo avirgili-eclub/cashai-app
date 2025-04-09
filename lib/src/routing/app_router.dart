@@ -17,6 +17,8 @@ import 'package:starter_architecture_flutter_firebase/src/features/onboarding/pr
 import 'package:starter_architecture_flutter_firebase/src/routing/go_router_refresh_stream.dart';
 import 'package:starter_architecture_flutter_firebase/src/routing/not_found_screen.dart';
 import 'package:starter_architecture_flutter_firebase/src/routing/scaffold_with_nested_navigation.dart';
+// Importar el DashboardScreen
+import 'package:starter_architecture_flutter_firebase/src/features/dashboard/presentation/screens/dashboard_screen.dart';
 
 part 'app_router.g.dart';
 
@@ -25,6 +27,8 @@ final _rootNavigatorKey = GlobalKey<NavigatorState>();
 final _jobsNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'jobs');
 final _entriesNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'entries');
 final _accountNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'account');
+final _dashboardNavigatorKey =
+    GlobalKey<NavigatorState>(debugLabel: 'dashboard');
 
 enum AppRoute {
   onboarding,
@@ -38,13 +42,18 @@ enum AppRoute {
   editEntry,
   entries,
   profile,
+  // Nuevas rutas para la app de finanzas
+  dashboard,
+  categories,
+  expenses,
+  incomes,
 }
 
 @riverpod
 GoRouter goRouter(Ref ref) {
   final authRepository = ref.watch(authRepositoryProvider);
   return GoRouter(
-    initialLocation: '/signIn',
+    initialLocation: '/dashboard', // Cambiar la ruta inicial a dashboard
     navigatorKey: _rootNavigatorKey,
     debugLogDiagnostics: true,
     redirect: (context, state) {
@@ -52,14 +61,19 @@ GoRouter goRouter(Ref ref) {
           ref.read(onboardingRepositoryProvider).requireValue;
       final didCompleteOnboarding = onboardingRepository.isOnboardingComplete();
       final path = state.uri.path;
+
+      // Permitir acceso al dashboard sin redirección
+      if (path.startsWith('/dashboard')) {
+        return null;
+      }
+
       if (!didCompleteOnboarding) {
-        // Always check state.subloc before returning a non-null route
-        // https://github.com/flutter/packages/blob/main/packages/go_router/example/lib/redirection.dart#L78
         if (path != '/onboarding') {
           return '/onboarding';
         }
         return null;
       }
+
       final isLoggedIn = authRepository.currentUser != null;
       if (isLoggedIn) {
         if (path.startsWith('/onboarding') || path.startsWith('/signIn')) {
@@ -69,7 +83,10 @@ GoRouter goRouter(Ref ref) {
         if (path.startsWith('/onboarding') ||
             path.startsWith('/jobs') ||
             path.startsWith('/entries') ||
-            path.startsWith('/account')) {
+            path.startsWith('/account') ||
+            path.startsWith('/categories') ||
+            path.startsWith('/expenses') ||
+            path.startsWith('/incomes')) {
           return '/signIn';
         }
       }
@@ -77,6 +94,14 @@ GoRouter goRouter(Ref ref) {
     },
     refreshListenable: GoRouterRefreshStream(authRepository.authStateChanges()),
     routes: [
+      // Ruta del Dashboard
+      GoRoute(
+        path: '/dashboard',
+        name: AppRoute.dashboard.name,
+        pageBuilder: (context, state) => const NoTransitionPage(
+          child: DashboardScreen(),
+        ),
+      ),
       GoRoute(
         path: '/onboarding',
         name: AppRoute.onboarding.name,
@@ -91,6 +116,37 @@ GoRouter goRouter(Ref ref) {
           child: CustomSignInScreen(),
         ),
       ),
+      // Rutas adicionales para las nuevas secciones
+      GoRoute(
+        path: '/categories',
+        name: AppRoute.categories.name,
+        pageBuilder: (context, state) => NoTransitionPage(
+          child: Scaffold(
+            appBar: AppBar(title: const Text('Categorías')),
+            body: const Center(child: Text('Pantalla de Categorías')),
+          ),
+        ),
+      ),
+      GoRoute(
+        path: '/expenses',
+        name: AppRoute.expenses.name,
+        pageBuilder: (context, state) => NoTransitionPage(
+          child: Scaffold(
+            appBar: AppBar(title: const Text('Gastos')),
+            body: const Center(child: Text('Pantalla de Gastos')),
+          ),
+        ),
+      ),
+      GoRoute(
+        path: '/incomes',
+        name: AppRoute.incomes.name,
+        pageBuilder: (context, state) => NoTransitionPage(
+          child: Scaffold(
+            appBar: AppBar(title: const Text('Ingresos')),
+            body: const Center(child: Text('Pantalla de Ingresos')),
+          ),
+        ),
+      ),
       // Stateful navigation based on:
       // https://github.com/flutter/packages/blob/main/packages/go_router/example/lib/stateful_shell_route.dart
       StatefulShellRoute.indexedStack(
@@ -98,6 +154,18 @@ GoRouter goRouter(Ref ref) {
           child: ScaffoldWithNestedNavigation(navigationShell: navigationShell),
         ),
         branches: [
+          StatefulShellBranch(
+            navigatorKey:
+                _dashboardNavigatorKey, // Nueva rama para el dashboard
+            routes: [
+              GoRoute(
+                path: '/dashboard-tab',
+                pageBuilder: (context, state) => const NoTransitionPage(
+                  child: DashboardScreen(),
+                ),
+              ),
+            ],
+          ),
           StatefulShellBranch(
             navigatorKey: _jobsNavigatorKey,
             routes: [
@@ -108,6 +176,7 @@ GoRouter goRouter(Ref ref) {
                   child: JobsScreen(),
                 ),
                 routes: [
+                  // Rutas anidadas existentes...
                   GoRoute(
                     path: 'add',
                     name: AppRoute.addJob.name,
