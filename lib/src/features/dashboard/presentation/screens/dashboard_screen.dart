@@ -2,6 +2,7 @@ import 'dart:developer' as developer;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/auth/providers/user_session_provider.dart';
+import '../../../../core/styles/app_styles.dart';
 import '../controllers/balance_controller.dart';
 import '../widgets/app_header.dart';
 import '../widgets/balance_card.dart';
@@ -26,6 +27,8 @@ class DashboardScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Cash AI'),
+        backgroundColor: AppStyles.primaryColor, // Now actually using AppStyles
+        foregroundColor: Colors.white,
         actions: [
           // This is just for testing purposes - you'd remove this in production
           IconButton(
@@ -73,7 +76,7 @@ class DashboardScreen extends ConsumerWidget {
       ),
       floatingActionButton: Transform.translate(
         // Offsetting the button position
-        offset: const Offset(0, 20), // Positive y value moves it down
+        offset: const Offset(0, 15), // Positive y value moves it down
         child: const SendAudioButton(),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,

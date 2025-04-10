@@ -3,6 +3,7 @@ import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:force_update_helper/force_update_helper.dart';
+import 'package:starter_architecture_flutter_firebase/src/core/styles/app_styles.dart';
 import 'package:starter_architecture_flutter_firebase/src/routing/app_router.dart';
 import 'package:starter_architecture_flutter_firebase/src/routing/app_startup.dart';
 import 'package:starter_architecture_flutter_firebase/src/utils/alert_dialogs.dart';
@@ -10,8 +11,6 @@ import 'package:url_launcher/url_launcher.dart';
 
 class MyApp extends ConsumerWidget {
   const MyApp({super.key});
-
-  static const primaryColor = Colors.indigo;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -60,31 +59,24 @@ class MyApp extends ConsumerWidget {
           ),
         );
       },
-      theme: ThemeData(
-        colorSchemeSeed: primaryColor,
+      theme: AppStyles.theme.copyWith(
+        // Merge any specific UI customizations not covered in AppStyles
+        // while still using AppStyles colors
         unselectedWidgetColor: Colors.grey,
-        appBarTheme: const AppBarTheme(
-          backgroundColor: primaryColor,
+        appBarTheme: AppBarTheme(
+          backgroundColor: AppStyles.primaryColor,
           foregroundColor: Colors.white,
           elevation: 2.0,
           centerTitle: true,
         ),
         scaffoldBackgroundColor: Colors.grey[200],
         dividerColor: Colors.grey[400],
+        // Add back the elevated button theme
         elevatedButtonTheme: ElevatedButtonThemeData(
           style: ElevatedButton.styleFrom(
-            backgroundColor: primaryColor,
+            backgroundColor: AppStyles.primaryColor,
             foregroundColor: Colors.white,
           ),
-        ),
-        outlinedButtonTheme: OutlinedButtonThemeData(
-          style: OutlinedButton.styleFrom(
-            backgroundColor: primaryColor,
-            foregroundColor: Colors.white,
-          ),
-        ),
-        floatingActionButtonTheme: const FloatingActionButtonThemeData(
-          backgroundColor: primaryColor,
         ),
       ),
       debugShowCheckedModeBanner: false,
