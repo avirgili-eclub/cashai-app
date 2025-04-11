@@ -26,7 +26,10 @@ class FirebaseBalanceDataSource {
     try {
       final response = await client.get(
         Uri.parse(url),
-        headers: {'Content-Type': 'application/json'},
+        headers: {
+          'Content-Type': 'application/json; charset=utf-8',
+          'Accept': 'application/json; charset=utf-8',
+        },
       );
 
       developer.log('Response status code: ${response.statusCode}',
@@ -56,7 +59,10 @@ class FirebaseBalanceDataSource {
     try {
       final response = await client.get(
         Uri.parse(url),
-        headers: {'Content-Type': 'application/json'},
+        headers: {
+          'Content-Type': 'application/json; charset=utf-8',
+          'Accept': 'application/json; charset=utf-8',
+        },
       );
 
       developer.log('Response status code: ${response.statusCode}',
@@ -87,7 +93,10 @@ class FirebaseBalanceDataSource {
     try {
       final response = await client.get(
         Uri.parse(url),
-        headers: {'Content-Type': 'application/json'},
+        headers: {
+          'Content-Type': 'application/json; charset=utf-8',
+          'Accept': 'application/json; charset=utf-8'
+        },
       );
 
       developer.log('Response status code: ${response.statusCode}',
