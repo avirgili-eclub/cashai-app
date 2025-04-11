@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart'; // For date formatting
 import '../../../../core/utils/emoji_formatter.dart';
 import '../../../../core/utils/color_utils.dart';
+import '../../../../core/presentation/widgets/money_text.dart';
+import '../../../../core/utils/money_formatter.dart';
 import '../../domain/entities/recent_transaction.dart';
 import '../controllers/transactions_controller.dart';
 
@@ -175,10 +177,13 @@ class TransactionsSection extends ConsumerWidget {
                 ],
               ),
             ),
-            Text(
-              '${isDebit ? '- ' : '+ '}Gs. ${transaction.amount.toStringAsFixed(0)}',
-              style: TextStyle(
-                color: isDebit ? Colors.red : Colors.green,
+            MoneyText(
+              amount: transaction.amount,
+              currency: 'Gs.',
+              isExpense: isDebit,
+              isIncome: !isDebit,
+              showSign: true,
+              style: const TextStyle(
                 fontWeight: FontWeight.bold,
               ),
             ),

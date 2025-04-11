@@ -2,6 +2,8 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart'; // Importamos intl para formateo de números
+import 'package:intl/date_symbol_data_local.dart'; // Para inicializar locales
 import 'package:starter_architecture_flutter_firebase/firebase_options.dart';
 import 'package:starter_architecture_flutter_firebase/src/app.dart';
 import 'package:starter_architecture_flutter_firebase/src/core/styles/app_styles.dart';
@@ -18,6 +20,13 @@ Future<void> main() async {
   registerErrorHandlers();
   // * Initialize Firebase
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+  // Initialize intl date formatting for Spanish locale (Paraguay)
+  await initializeDateFormatting('es_PY', null);
+
+  // Set the default number format locale
+  Intl.defaultLocale = 'es_PY';
+
   // * Entry point of the app
   runApp(const ProviderScope(
     child: MyApp(),

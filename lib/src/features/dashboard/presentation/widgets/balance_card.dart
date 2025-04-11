@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/entities/balance.dart';
 import '../controllers/balance_controller.dart';
+import '../../../../core/utils/money_formatter.dart';
+import '../../../../core/presentation/widgets/money_text.dart';
 
 class BalanceCard extends ConsumerWidget {
   final Function()? onRefresh;
@@ -87,13 +89,15 @@ class BalanceCard extends ConsumerWidget {
           ],
         ),
         const SizedBox(height: 4),
-        Text(
-          '${balance.currency} ${balance.totalBalance.toStringAsFixed(0)}',
+        MoneyText(
+          amount: balance.totalBalance,
+          currency: balance.currency,
           style: const TextStyle(
             color: Colors.white,
             fontSize: 28,
             fontWeight: FontWeight.bold,
           ),
+          useColors: false,
         ),
         const SizedBox(height: 16),
         Row(
@@ -103,6 +107,7 @@ class BalanceCard extends ConsumerWidget {
               'Ingresos',
               balance.totalIncome,
               Icons.arrow_downward,
+              balance.currency,
             ),
             const SizedBox(width: 24),
             _buildBalanceItem(
@@ -110,6 +115,7 @@ class BalanceCard extends ConsumerWidget {
               'Gastos',
               balance.expenses,
               Icons.arrow_upward,
+              balance.currency,
             ),
           ],
         ),
@@ -126,6 +132,7 @@ class BalanceCard extends ConsumerWidget {
     String title,
     double amount,
     IconData icon,
+    String currency,
   ) {
     return Expanded(
       child: Column(
@@ -156,13 +163,15 @@ class BalanceCard extends ConsumerWidget {
             ],
           ),
           const SizedBox(height: 4),
-          Text(
-            'Gs. ${amount.toStringAsFixed(0)}',
+          MoneyText(
+            amount: amount,
+            currency: currency,
             style: const TextStyle(
               color: Colors.white,
               fontSize: 18,
               fontWeight: FontWeight.bold,
             ),
+            useColors: false,
           ),
         ],
       ),
@@ -204,13 +213,15 @@ class BalanceCard extends ConsumerWidget {
           style: const TextStyle(color: Colors.white70, fontSize: 12),
         ),
         const SizedBox(height: 4),
-        Text(
-          '$currency ${amount.toStringAsFixed(0)}',
+        MoneyText(
+          amount: amount,
+          currency: currency,
           style: const TextStyle(
             color: Colors.white,
             fontSize: 16,
             fontWeight: FontWeight.bold,
           ),
+          useColors: false,
         ),
       ],
     );

@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/utils/emoji_formatter.dart';
 import '../../../../core/utils/color_utils.dart';
+import '../../../../core/utils/money_formatter.dart';
+import '../../../../core/presentation/widgets/money_text.dart';
 import '../../domain/entities/top_category.dart';
 import '../controllers/categories_controller.dart';
 
@@ -151,11 +153,14 @@ class CategoriesSection extends ConsumerWidget {
             ),
           ),
           const SizedBox(width: 12),
-          Text(
-            'Gs. ${category.amount.toStringAsFixed(0)}',
+          MoneyText(
+            amount: category.amount,
+            currency: 'Gs.',
             style: const TextStyle(
               fontWeight: FontWeight.bold,
             ),
+            isExpense: true,
+            useColors: true, // Changed from false to true to enable colors
           ),
         ],
       ),
