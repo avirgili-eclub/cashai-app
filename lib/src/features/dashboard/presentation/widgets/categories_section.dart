@@ -1,12 +1,13 @@
 import 'dart:developer' as developer;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart'; // Add this import
+import 'package:go_router/go_router.dart';
 import '../../../../core/utils/emoji_formatter.dart';
 import '../../../../core/utils/color_utils.dart';
 import '../../../../core/utils/money_formatter.dart';
 import '../../../../core/presentation/widgets/money_text.dart';
 import '../../domain/entities/top_category.dart';
+import '../../domain/entities/category.dart'; // Add this import for Category conversion
 import '../controllers/categories_controller.dart';
 
 class CategoriesSection extends ConsumerWidget {
@@ -109,60 +110,91 @@ class CategoriesSection extends ConsumerWidget {
       loggerName: 'categories_section',
     );
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.grey[100],
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: containerColor,
-              borderRadius: BorderRadius.circular(8),
+    return InkWell(
+      onTap: () {
+        // Convert TopCategory to Category for navigation
+        final categoryForNavigation = _convertToCategory(category);
+
+        // Log the navigation
+        developer.log(
+            'Navigating to category transactions from dashboard: ${category.name}',
+            name: 'categories_section');
+
+        // Navigate to category transactions screen
+        context.pushNamed(
+          'categoryTransactions',
+          pathParameters: {'id': category.id.toString()},
+          extra: categoryForNavigation,
+        );
+      },
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.grey[100],
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: containerColor,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Center(child: emojiWidget),
             ),
-            child: Center(child: emojiWidget),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  category.name,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    category.name,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 4),
-                LinearProgressIndicator(value: category.percentage / 100),
-                const SizedBox(height: 4),
-                Text(
-                  '${category.expenseCount} gastos · ${category.percentage.toStringAsFixed(1)}%',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey[600],
+                  const SizedBox(height: 4),
+                  LinearProgressIndicator(value: category.percentage / 100),
+                  const SizedBox(height: 4),
+                  Text(
+                    '${category.expenseCount} gastos · ${category.percentage.toStringAsFixed(1)}%',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey[600],
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-          const SizedBox(width: 12),
-          MoneyText(
-            amount: category.amount,
-            currency: 'Gs.',
-            style: const TextStyle(
-              fontWeight: FontWeight.bold,
+            const SizedBox(width: 12),
+            MoneyText(
+              amount: category.amount,
+              currency: 'Gs.',
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+              ),
+              isExpense: true,
+              useColors: true, // Changed from false to true to enable colors
             ),
-            isExpense: true,
-            useColors: true, // Changed from false to true to enable colors
-          ),
-        ],
+          ],
+        ),
       ),
+    );
+  }
+
+  // Helper method to convert TopCategory to Category
+  Category _convertToCategory(TopCategory topCategory) {
+    return Category(
+      id: topCategory.id.toString(),
+      name: topCategory.name,
+      icon: topCategory.emoji,
+      iconBgColor: topCategory.color ?? '#BBDEFB', // Use color or default blue
+      amount: topCategory.amount,
+      percentage: topCategory.percentage,
     );
   }
 }
