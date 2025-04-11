@@ -19,6 +19,8 @@ import 'package:starter_architecture_flutter_firebase/src/routing/not_found_scre
 import 'package:starter_architecture_flutter_firebase/src/routing/scaffold_with_nested_navigation.dart';
 // Importar el DashboardScreen
 import 'package:starter_architecture_flutter_firebase/src/features/dashboard/presentation/screens/dashboard_screen.dart';
+// Update the import for CategoriesScreen
+import '../features/categories/presentation/screens/categories_screen.dart';
 
 part 'app_router.g.dart';
 
@@ -62,8 +64,8 @@ GoRouter goRouter(Ref ref) {
       final didCompleteOnboarding = onboardingRepository.isOnboardingComplete();
       final path = state.uri.path;
 
-      // Permitir acceso al dashboard sin redirección
-      if (path.startsWith('/dashboard')) {
+      // Permitir acceso al dashboard y categories sin redirección
+      if (path.startsWith('/dashboard') || path.startsWith('/categories')) {
         return null;
       }
 
@@ -84,7 +86,6 @@ GoRouter goRouter(Ref ref) {
             path.startsWith('/jobs') ||
             path.startsWith('/entries') ||
             path.startsWith('/account') ||
-            path.startsWith('/categories') ||
             path.startsWith('/expenses') ||
             path.startsWith('/incomes')) {
           return '/signIn';
@@ -120,11 +121,8 @@ GoRouter goRouter(Ref ref) {
       GoRoute(
         path: '/categories',
         name: AppRoute.categories.name,
-        pageBuilder: (context, state) => NoTransitionPage(
-          child: Scaffold(
-            appBar: AppBar(title: const Text('Categorías')),
-            body: const Center(child: Text('Pantalla de Categorías')),
-          ),
+        pageBuilder: (context, state) => const NoTransitionPage(
+          child: CategoriesScreen(),
         ),
       ),
       GoRoute(

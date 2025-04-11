@@ -1,6 +1,7 @@
 import 'dart:developer' as developer;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart'; // Add this import
 import '../../../../core/utils/emoji_formatter.dart';
 import '../../../../core/utils/color_utils.dart';
 import '../../../../core/utils/money_formatter.dart';
@@ -34,10 +35,8 @@ class CategoriesSection extends ConsumerWidget {
               ),
               TextButton(
                 onPressed: () {
-                  // Refresh categories on demand
-                  ref
-                      .read(categoriesControllerProvider.notifier)
-                      .refreshCategories();
+                  // Use pushNamed instead of goNamed to maintain navigation history
+                  context.pushNamed('categories');
                 },
                 child: const Text(
                   'Ver Todo',
