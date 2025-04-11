@@ -6,6 +6,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../../../core/auth/providers/user_session_provider.dart';
+import '../../../dashboard/presentation/controllers/transactions_controller.dart';
 import '../../domain/repositories/audio_repository.dart'; // Interface import
 import '../../data/repositories/audio_repository_impl.dart'; // Import implementation instead of provider file
 
@@ -153,6 +154,9 @@ class AudioController extends _$AudioController {
 
       // Update state
       state = AudioRecordingState.success;
+
+      // Refresh transactions to show the new transaction created from audio
+      ref.read(transactionsControllerProvider.notifier).refreshTransactions();
 
       // Reset state after a short delay
       _stateResetTimer?.cancel();
