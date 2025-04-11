@@ -8,9 +8,12 @@ plugins {
     id "dev.flutter.flutter-gradle-plugin"
 }
 
+def localProperties = new Properties()
+def localPropertiesFile = rootProject.file('local.properties')
+
 android {
     namespace = "com.example.starter_architecture_flutter_firebase"
-    compileSdk = flutter.compileSdkVersion
+    compileSdkVersion = flutter.compileSdkVersion
     ndkVersion = "27.0.12077973"
 
     compileOptions {

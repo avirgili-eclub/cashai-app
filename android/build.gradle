@@ -8,11 +8,33 @@ allprojects {
 rootProject.buildDir = "../build"
 subprojects {
     project.buildDir = "${rootProject.buildDir}/${project.name}"
-}
-subprojects {
+    
+    // Apply the com.android.application plugin for app module
     project.evaluationDependsOn(":app")
+    
+    // Fix namespace issues for plugins
+    if (project.hasProperty('android') && 
+        project.plugins.hasPlugin('com.android.library') &&
+        !project.android.hasProperty('namespace')) {
+        project.android {
+            namespace project.group ?: "com.example.library.${project.name}"
+        }
+    }
 }
 
 tasks.register("clean", Delete) {
     delete rootProject.buildDir
+}
+
+buildscript {
+    ext.kotlin_version = '1.8.10' // Update from 1.7.10 to 1.8.10
+    repositories {
+        google()
+        mavenCentral()
+    }
+
+    dependencies {
+        classpath 'com.android.tools.build:gradle:7.3.0'
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+    }
 }
