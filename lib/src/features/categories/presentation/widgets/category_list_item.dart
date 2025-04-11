@@ -1,5 +1,6 @@
 import 'dart:developer' as developer;
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart'; // Add this import for navigation
 import '../../../../core/utils/emoji_formatter.dart';
 import '../../../../core/utils/color_utils.dart';
 import '../../../../core/styles/app_styles.dart';
@@ -49,7 +50,17 @@ class CategoryListItem extends StatelessWidget {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: onTap,
+          onTap: () {
+            // Navigate to category transactions screen with the category ID and object
+            developer.log(
+                'Navigating to category transactions for: ${category.name}',
+                name: 'category_list_item');
+            context.pushNamed(
+              'categoryTransactions',
+              pathParameters: {'id': category.id},
+              extra: category,
+            );
+          },
           borderRadius: BorderRadius.circular(12),
           child: Padding(
             padding: const EdgeInsets.all(16.0),

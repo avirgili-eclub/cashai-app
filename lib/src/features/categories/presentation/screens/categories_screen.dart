@@ -105,10 +105,16 @@ class CategoriesScreen extends ConsumerWidget {
                 child: CategoryListItem(
                   category: mockCategories[index],
                   onTap: () {
-                    // Navigate to category details
+                    // Navigate to category transactions
+                    final category = mockCategories[index];
                     developer.log(
-                        'Tapped on category: ${mockCategories[index].name}',
+                        'Navigating to category transactions: ${category.name}',
                         name: 'categories_screen');
+                    context.pushNamed(
+                      'categoryTransactions',
+                      pathParameters: {'id': category.id},
+                      extra: category,
+                    );
                   },
                 ),
               );

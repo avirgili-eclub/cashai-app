@@ -21,6 +21,10 @@ import 'package:starter_architecture_flutter_firebase/src/routing/scaffold_with_
 import 'package:starter_architecture_flutter_firebase/src/features/dashboard/presentation/screens/dashboard_screen.dart';
 // Update the import for CategoriesScreen
 import '../features/categories/presentation/screens/categories_screen.dart';
+// Add this import for the new screen
+import '../features/categories/presentation/screens/category_transactions_screen.dart';
+// Import the Category entity
+import '../features/dashboard/domain/entities/category.dart';
 
 part 'app_router.g.dart';
 
@@ -47,6 +51,7 @@ enum AppRoute {
   // Nuevas rutas para la app de finanzas
   dashboard,
   categories,
+  categoryTransactions, // Add this new route
   expenses,
   incomes,
 }
@@ -144,6 +149,21 @@ GoRouter goRouter(Ref ref) {
             body: const Center(child: Text('Pantalla de Ingresos')),
           ),
         ),
+      ),
+      // Add the new route for category transactions
+      GoRoute(
+        path: '/categories/:id',
+        name: AppRoute.categoryTransactions.name,
+        pageBuilder: (context, state) {
+          final categoryId = state.pathParameters['id'] ?? '';
+          final category = state.extra as Category?;
+          return NoTransitionPage(
+            child: CategoryTransactionsScreen(
+              categoryId: categoryId,
+              category: category,
+            ),
+          );
+        },
       ),
       // Stateful navigation based on:
       // https://github.com/flutter/packages/blob/main/packages/go_router/example/lib/stateful_shell_route.dart
