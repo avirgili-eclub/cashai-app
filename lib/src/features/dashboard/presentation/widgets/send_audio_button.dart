@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../features/audio/presentation/controllers/audio_controller.dart';
 
-class SendAudioButton extends StatefulWidget {
+class SendAudioButton extends ConsumerStatefulWidget {
   const SendAudioButton({Key? key}) : super(key: key);
 
   @override
-  State<SendAudioButton> createState() => _SendAudioButtonState();
+  ConsumerState<SendAudioButton> createState() => _SendAudioButtonState();
 }
 
-class _SendAudioButtonState extends State<SendAudioButton>
+class _SendAudioButtonState extends ConsumerState<SendAudioButton>
     with SingleTickerProviderStateMixin {
   bool _isRecording = false;
   late AnimationController _animationController;
@@ -31,6 +33,11 @@ class _SendAudioButtonState extends State<SendAudioButton>
         curve: Curves.easeInOut,
       ),
     );
+
+    // Initialize the audio controller
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(audioControllerProvider.notifier).initialize();
+    });
   }
 
   @override
@@ -41,16 +48,30 @@ class _SendAudioButtonState extends State<SendAudioButton>
 
   @override
   Widget build(BuildContext context) {
+    // Watch the audio controller state
+    final audioState = ref.watch(audioControllerProvider);
+
     return GestureDetector(
       onLongPressStart: (_) {
         setState(() {
           _isRecording = true;
         });
+        // Start recording
+        ref.read(audioControllerProvider.notifier).startRecording();
       },
       onLongPressEnd: (_) {
         setState(() {
           _isRecording = false;
         });
+        // Stop recording and upload
+        ref.read(audioControllerProvider.notifier).stopRecordingAndUpload();
+      },
+      onLongPressCancel: () {
+        setState(() {
+          _isRecording = false;
+        });
+        // Cancel recording
+        ref.read(audioControllerProvider.notifier).cancelRecording();
       },
       child: SizedBox(
         width: 72, // Explicit size for the FloatingActionButton
@@ -60,7 +81,7 @@ class _SendAudioButtonState extends State<SendAudioButton>
             onPressed: () {
               // Single tap action can be added here if needed
             },
-            backgroundColor: Theme.of(context).primaryColor,
+            backgroundColor: _getButtonColor(audioState),
             elevation: 4.0,
             // Ensure the FAB doesn't use a preset size
             mini: false,
@@ -70,19 +91,67 @@ class _SendAudioButtonState extends State<SendAudioButton>
               transitionBuilder: (Widget child, Animation<double> animation) {
                 return FadeTransition(opacity: animation, child: child);
               },
-              child: _isRecording
-                  ? _buildRecordingIcon()
-                  : const Icon(
-                      Icons.mic,
-                      key: ValueKey('mic_icon'),
-                      color: Colors.white,
-                      size: 32,
-                    ),
+              child: _buildButtonContent(audioState),
             ),
           ),
         ),
       ),
     );
+  }
+
+  Color _getButtonColor(AudioRecordingState state) {
+    switch (state) {
+      case AudioRecordingState.recording:
+        return Colors.red;
+      case AudioRecordingState.uploading:
+        return Colors.orange;
+      case AudioRecordingState.success:
+        return Colors.green;
+      case AudioRecordingState.error:
+        return Colors.redAccent;
+      case AudioRecordingState.idle:
+      default:
+        return Theme.of(context).primaryColor;
+    }
+  }
+
+  Widget _buildButtonContent(AudioRecordingState state) {
+    switch (state) {
+      case AudioRecordingState.recording:
+        return _buildRecordingIcon();
+      case AudioRecordingState.uploading:
+        return const SizedBox(
+          key: ValueKey('uploading_icon'),
+          width: 24,
+          height: 24,
+          child: CircularProgressIndicator(
+            color: Colors.white,
+            strokeWidth: 2.5,
+          ),
+        );
+      case AudioRecordingState.success:
+        return const Icon(
+          Icons.check,
+          key: ValueKey('success_icon'),
+          color: Colors.white,
+          size: 32,
+        );
+      case AudioRecordingState.error:
+        return const Icon(
+          Icons.error,
+          key: ValueKey('error_icon'),
+          color: Colors.white,
+          size: 32,
+        );
+      case AudioRecordingState.idle:
+      default:
+        return const Icon(
+          Icons.mic,
+          key: ValueKey('mic_icon'),
+          color: Colors.white,
+          size: 32,
+        );
+    }
   }
 
   Widget _buildRecordingIcon() {

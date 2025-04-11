@@ -29,6 +29,9 @@ dependencies:
   force_update_helper: ^0.1.5
   url_launcher: ^6.3.1
   flutter_sound: ^9.2.13  # Usa la versión más reciente disponible
+  path_provider: ^2.1.2   # For temp file storage
+  http: ^1.2.0            # For API communication
+  permission_handler: ^11.1.0  # To handle microphone permissions
 
 dev_dependencies:
   flutter_test:
