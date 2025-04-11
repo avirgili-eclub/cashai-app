@@ -6,7 +6,7 @@ part of 'audio_controller.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$audioControllerHash() => r'd808e238a137d3471844d24513c5d751b813e3c6';
+String _$audioControllerHash() => r'5d610f769429e640a4390306c06cfd19e67c9476';
 
 /// See also [AudioController].
 @ProviderFor(AudioController)

@@ -45,11 +45,13 @@ class BalanceRepositoryImpl implements BalanceRepository {
   }
 
   @override
-  Future<List<TopCategory>> getTopCategories() async {
-    developer.log('Getting top categories for userId: $userId',
+  Future<List<TopCategory>> getTopCategories({int? limit}) async {
+    developer.log(
+        'Getting top categories for userId: $userId with limit: $limit',
         name: 'balance_repository');
     try {
-      final categories = await dataSource.getTopCategories(userId);
+      final categories =
+          await dataSource.getTopCategories(userId, limit: limit);
       developer.log('Successfully retrieved ${categories.length} categories',
           name: 'balance_repository');
       return categories;

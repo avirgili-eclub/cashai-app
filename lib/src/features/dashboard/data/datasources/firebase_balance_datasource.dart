@@ -52,8 +52,10 @@ class FirebaseBalanceDataSource {
     }
   }
 
-  Future<List<TopCategory>> getTopCategories(String userId) async {
-    final url = '$baseUrl/users/$userId/top-categories';
+  Future<List<TopCategory>> getTopCategories(String userId,
+      {int? limit}) async {
+    final url =
+        '$baseUrl/users/$userId/top-categories${limit != null ? '?limit=$limit' : ''}';
     developer.log('Making API request to: $url', name: 'categories_datasource');
 
     try {

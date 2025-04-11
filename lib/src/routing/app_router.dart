@@ -25,6 +25,8 @@ import '../features/categories/presentation/screens/categories_screen.dart';
 import '../features/categories/presentation/screens/category_transactions_screen.dart';
 // Import the Category entity
 import '../features/dashboard/domain/entities/category.dart';
+// Add this import for TopCategory
+import '../features/dashboard/domain/entities/top_category.dart';
 
 part 'app_router.g.dart';
 
@@ -156,7 +158,8 @@ GoRouter goRouter(Ref ref) {
         name: AppRoute.categoryTransactions.name,
         pageBuilder: (context, state) {
           final categoryId = state.pathParameters['id'] ?? '';
-          final category = state.extra as Category?;
+          // Change the type cast from Category to TopCategory
+          final category = state.extra as TopCategory?;
           return NoTransitionPage(
             child: CategoryTransactionsScreen(
               categoryId: categoryId,

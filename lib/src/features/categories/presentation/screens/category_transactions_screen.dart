@@ -7,11 +7,13 @@ import '../../../../core/utils/emoji_formatter.dart';
 import '../../../../core/utils/color_utils.dart';
 import '../../../../core/utils/date_formatter.dart';
 import '../../../../core/presentation/widgets/money_text.dart';
-import '../../../dashboard/domain/entities/category.dart';
+// Update import to use TopCategory instead of Category
+import '../../../dashboard/domain/entities/top_category.dart';
 
 class CategoryTransactionsScreen extends ConsumerWidget {
   final String categoryId;
-  final Category? category;
+  // Change the type from Category to TopCategory
+  final TopCategory? category;
 
   const CategoryTransactionsScreen({
     Key? key,
@@ -26,12 +28,11 @@ class CategoryTransactionsScreen extends ConsumerWidget {
         name: 'category_transactions');
 
     // We'll use the passed category or fetch it if not provided
-    // In a real app, you would fetch this from a repository based on categoryId
-    final displayCategory = category ?? _getMockCategory(categoryId);
+    final displayCategory = category ?? _getMockTopCategory(categoryId);
 
     // Use EmojiFormatter for displaying the category icon
     final Widget categoryIcon = EmojiFormatter.emojiToWidget(
-      displayCategory.icon,
+      displayCategory.emoji,
       fontSize: 24,
       fallbackIcon: Icons.category,
       fallbackColor: Colors.blue,
@@ -40,7 +41,7 @@ class CategoryTransactionsScreen extends ConsumerWidget {
 
     // Parse the color from hex
     final Color categoryColor = ColorUtils.fromHex(
-      displayCategory.iconBgColor,
+      displayCategory.color,
       defaultColor: const Color(0xFFBBDEFB),
       loggerName: 'category_transactions',
     );
@@ -91,7 +92,8 @@ class CategoryTransactionsScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildSummaryCard(BuildContext context, Category category) {
+  // Update summary card method to use TopCategory
+  Widget _buildSummaryCard(BuildContext context, TopCategory category) {
     return Container(
       margin: const EdgeInsets.all(16),
       padding: const EdgeInsets.all(16),
@@ -362,52 +364,64 @@ class CategoryTransactionsScreen extends ConsumerWidget {
     );
   }
 
-  // Mock data methods
-  Category _getMockCategory(String id) {
+  // Update mock data method to return TopCategory instead of Category
+  TopCategory _getMockTopCategory(String id) {
     final mockCategories = {
-      '1': Category(
-        id: '1',
+      '1': TopCategory(
+        id: 1,
         name: 'Comida y Bebida',
-        icon: '🍔',
-        iconBgColor: '#E9D5FF',
+        emoji: '🍔',
+        color: '#E9D5FF',
         amount: 743985,
         percentage: 35.0,
+        expenseCount: 42,
       ),
-      '2': Category(
-        id: '2',
+      '2': TopCategory(
+        id: 2,
         name: 'Transporte',
-        icon: '🚗',
-        iconBgColor: '#DBEAFE',
+        emoji: '🚗',
+        color: '#DBEAFE',
         amount: 510550,
         percentage: 25.0,
+        expenseCount: 28,
       ),
-      '3': Category(
-        id: '3',
+      '3': TopCategory(
+        id: 3,
         name: 'Salario',
-        icon: '💼',
-        iconBgColor: '#D1FAE5',
+        emoji: '💼',
+        color: '#D1FAE5',
         amount: 9562500,
         percentage: 0.0,
+        expenseCount: 1,
       ),
-      '4': Category(
-        id: '4',
+      '4': TopCategory(
+        id: 4,
         name: 'Entretenimiento',
-        icon: '🎮',
-        iconBgColor: '#D1FAE5',
+        emoji: '🎮',
+        color: '#D1FAE5',
         amount: 425000,
         percentage: 20.0,
+        expenseCount: 15,
       ),
-      '5': Category(
-        id: '5',
+      '5': TopCategory(
+        id: 5,
         name: 'Salud',
-        icon: '⚕️',
-        iconBgColor: '#FEE2E2',
+        emoji: '⚕️',
+        color: '#FEE2E2',
         amount: 320000,
         percentage: 15.0,
+        expenseCount: 8,
       ),
     };
 
-    return mockCategories[id] ?? mockCategories['1']!;
+    int idAsInt;
+    try {
+      idAsInt = int.parse(id);
+    } catch (e) {
+      idAsInt = 1; // Default to 1 if parsing fails
+    }
+
+    return mockCategories['$idAsInt'] ?? mockCategories['1']!;
   }
 
   List<Transaction> _getMockTransactions(String categoryId) {

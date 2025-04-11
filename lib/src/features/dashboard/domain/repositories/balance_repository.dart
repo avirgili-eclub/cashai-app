@@ -7,7 +7,7 @@ part 'balance_repository.g.dart';
 
 abstract class BalanceRepository {
   Future<Balance> getBalance();
-  Future<List<TopCategory>> getTopCategories();
+  Future<List<TopCategory>> getTopCategories({int? limit});
 }
 
 @riverpod

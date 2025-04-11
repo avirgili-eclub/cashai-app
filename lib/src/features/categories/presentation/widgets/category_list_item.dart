@@ -1,19 +1,19 @@
 import 'dart:developer' as developer;
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart'; // Add this import for navigation
+import 'package:go_router/go_router.dart';
 import '../../../../core/utils/emoji_formatter.dart';
 import '../../../../core/utils/color_utils.dart';
 import '../../../../core/styles/app_styles.dart';
 import '../../../../core/presentation/widgets/money_text.dart';
-import '../../../dashboard/domain/entities/category.dart';
+import '../../../dashboard/domain/entities/top_category.dart';
 
 class CategoryListItem extends StatelessWidget {
-  final Category category;
+  final TopCategory topCategory;
   final VoidCallback onTap;
 
   const CategoryListItem({
     Key? key,
-    required this.category,
+    required this.topCategory,
     required this.onTap,
   }) : super(key: key);
 
@@ -21,8 +21,8 @@ class CategoryListItem extends StatelessWidget {
   Widget build(BuildContext context) {
     // Use the EmojiFormatter utility class to handle emoji formatting
     Widget emojiWidget = EmojiFormatter.emojiToWidget(
-      category.icon,
-      fontSize: 24, // Changed from size: 24 to fontSize: 24
+      topCategory.emoji,
+      fontSize: 24,
       fallbackIcon: Icons.category,
       fallbackColor: Colors.blue,
       loggerName: 'category_list_item',
@@ -30,16 +30,17 @@ class CategoryListItem extends StatelessWidget {
 
     // Parse the color from the hex string or use a default pastel blue
     final Color containerColor = ColorUtils.fromHex(
-      category.iconBgColor,
+      topCategory.color,
       defaultColor: const Color(0xFFBBDEFB), // Light pastel blue
       loggerName: 'category_list_item',
     );
 
     // Determine if we should show the percentage circle
-    final bool showPercentage = category.percentage > 0;
+    final bool showPercentage = topCategory.percentage > 0;
 
-    // Create a formatted transaction count string
-    final String transactionsText = _getTransactionCountText();
+    // Use real transaction count from TopCategory
+    final String transactionsText =
+        _getTransactionCountText(topCategory.expenseCount);
 
     return Container(
       decoration: BoxDecoration(
@@ -50,17 +51,7 @@ class CategoryListItem extends StatelessWidget {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: () {
-            // Navigate to category transactions screen with the category ID and object
-            developer.log(
-                'Navigating to category transactions for: ${category.name}',
-                name: 'category_list_item');
-            context.pushNamed(
-              'categoryTransactions',
-              pathParameters: {'id': category.id},
-              extra: category,
-            );
-          },
+          onTap: onTap,
           borderRadius: BorderRadius.circular(12),
           child: Padding(
             padding: const EdgeInsets.all(16.0),
@@ -84,7 +75,7 @@ class CategoryListItem extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        category.name,
+                        topCategory.name,
                         style: const TextStyle(
                           fontWeight: FontWeight.w500,
                           fontSize: 16,
@@ -116,7 +107,7 @@ class CategoryListItem extends StatelessWidget {
                         ),
                         child: Center(
                           child: Text(
-                            '${category.percentage.toInt()}%',
+                            '${topCategory.percentage.toInt()}%',
                             style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w500,
@@ -139,32 +130,11 @@ class CategoryListItem extends StatelessWidget {
     );
   }
 
-  String _getTransactionCountText() {
-    // Mock transaction count - in a real app, this would come from the Category model
-    final int transactionCount = _getMockTransactionCount();
-
+  String _getTransactionCountText(int transactionCount) {
     if (transactionCount == 1) {
       return '1 transacción';
     } else {
       return '$transactionCount transacciones';
-    }
-  }
-
-  int _getMockTransactionCount() {
-    // Mock transaction count based on category ID
-    switch (category.id) {
-      case '1':
-        return 42;
-      case '2':
-        return 28;
-      case '3':
-        return 1;
-      case '4':
-        return 15;
-      case '5':
-        return 8;
-      default:
-        return 0;
     }
   }
 }

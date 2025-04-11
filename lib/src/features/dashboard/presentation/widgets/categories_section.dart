@@ -4,10 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/utils/emoji_formatter.dart';
 import '../../../../core/utils/color_utils.dart';
-import '../../../../core/utils/money_formatter.dart';
 import '../../../../core/presentation/widgets/money_text.dart';
 import '../../domain/entities/top_category.dart';
-import '../../domain/entities/category.dart'; // Add this import for Category conversion
 import '../controllers/categories_controller.dart';
 
 class CategoriesSection extends ConsumerWidget {
@@ -112,19 +110,16 @@ class CategoriesSection extends ConsumerWidget {
 
     return InkWell(
       onTap: () {
-        // Convert TopCategory to Category for navigation
-        final categoryForNavigation = _convertToCategory(category);
-
-        // Log the navigation
+        // No need to convert, use TopCategory directly
         developer.log(
             'Navigating to category transactions from dashboard: ${category.name}',
             name: 'categories_section');
 
-        // Navigate to category transactions screen
+        // Navigate to category transactions screen with TopCategory
         context.pushNamed(
           'categoryTransactions',
           pathParameters: {'id': category.id.toString()},
-          extra: categoryForNavigation,
+          extra: category, // Pass TopCategory directly
         );
       },
       borderRadius: BorderRadius.circular(12),
@@ -183,18 +178,6 @@ class CategoriesSection extends ConsumerWidget {
           ],
         ),
       ),
-    );
-  }
-
-  // Helper method to convert TopCategory to Category
-  Category _convertToCategory(TopCategory topCategory) {
-    return Category(
-      id: topCategory.id.toString(),
-      name: topCategory.name,
-      icon: topCategory.emoji,
-      iconBgColor: topCategory.color ?? '#BBDEFB', // Use color or default blue
-      amount: topCategory.amount,
-      percentage: topCategory.percentage,
     );
   }
 }

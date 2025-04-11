@@ -1,9 +1,9 @@
 import 'dart:developer' as developer;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart'; // Add this import for GoRouter navigation
+import 'package:go_router/go_router.dart';
 import '../../../../core/styles/app_styles.dart';
-import '../../../dashboard/domain/entities/category.dart';
+import '../../../dashboard/domain/entities/top_category.dart';
 import '../../../dashboard/presentation/controllers/categories_controller.dart';
 import '../widgets/category_list_item.dart';
 import '../widgets/add_category_modal.dart';
@@ -15,8 +15,8 @@ class CategoriesScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     developer.log('Building CategoriesScreen', name: 'categories_screen');
 
-    // We'll use a mock list for now, but this would come from a provider
-    final categoriesAsync = ref.watch(categoriesControllerProvider);
+    // Use the new categoriesWithLimit provider instead
+    final categoriesAsync = ref.watch(categoriesWithLimitProvider(limit: 0));
 
     return PopScope(
       canPop: false, // Handle back navigation manually
@@ -92,28 +92,28 @@ class CategoriesScreen extends ConsumerWidget {
           );
         }
 
-        // Convert the data to a list of mock Category objects for display
-        final mockCategories = _createMockCategories();
+        // Use TopCategory objects directly
+        final categoryList = categories.cast<TopCategory>();
 
         return Padding(
           padding: const EdgeInsets.all(16.0),
           child: ListView.builder(
-            itemCount: mockCategories.length,
+            itemCount: categoryList.length,
             itemBuilder: (context, index) {
               return Padding(
                 padding: const EdgeInsets.only(bottom: 16.0),
                 child: CategoryListItem(
-                  category: mockCategories[index],
+                  topCategory: categoryList[index], // Pass TopCategory directly
                   onTap: () {
                     // Navigate to category transactions
-                    final category = mockCategories[index];
+                    final category = categoryList[index];
                     developer.log(
                         'Navigating to category transactions: ${category.name}',
                         name: 'categories_screen');
                     context.pushNamed(
                       'categoryTransactions',
-                      pathParameters: {'id': category.id},
-                      extra: category,
+                      pathParameters: {'id': category.id.toString()},
+                      extra: category, // Pass TopCategory as extra
                     );
                   },
                 ),
@@ -140,51 +140,5 @@ class CategoriesScreen extends ConsumerWidget {
       backgroundColor: Colors.transparent,
       builder: (context) => const AddCategoryModal(),
     );
-  }
-
-  // Mock data for display
-  List<Category> _createMockCategories() {
-    return [
-      Category(
-        id: '1',
-        name: 'Comida y Bebida',
-        icon: '🍔',
-        iconBgColor: '#E9D5FF', // Purple light
-        amount: 743985,
-        percentage: 35.0,
-      ),
-      Category(
-        id: '2',
-        name: 'Transporte',
-        icon: '🚗',
-        iconBgColor: '#DBEAFE', // Blue light
-        amount: 510550,
-        percentage: 25.0,
-      ),
-      Category(
-        id: '3',
-        name: 'Salario',
-        icon: '💼',
-        iconBgColor: '#D1FAE5', // Green light
-        amount: 9562500,
-        percentage: 0.0, // No percentage for income
-      ),
-      Category(
-        id: '4',
-        name: 'Entretenimiento',
-        icon: '🎮',
-        iconBgColor: '#D1FAE5', // Green light
-        amount: 425000,
-        percentage: 20.0,
-      ),
-      Category(
-        id: '5',
-        name: 'Salud',
-        icon: '⚕️',
-        iconBgColor: '#FEE2E2', // Red light
-        amount: 320000,
-        percentage: 15.0,
-      ),
-    ];
   }
 }
