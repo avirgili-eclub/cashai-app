@@ -6,6 +6,9 @@ import '../controllers/balance_controller.dart';
 import '../../../../core/utils/money_formatter.dart';
 import '../../../../core/presentation/widgets/money_text.dart';
 
+// Create a provider to store the visibility state to maintain it across widget rebuilds
+final balanceVisibilityProvider = StateProvider<bool>((ref) => true);
+
 class BalanceCard extends ConsumerWidget {
   final Function()? onRefresh;
 
@@ -15,6 +18,9 @@ class BalanceCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     developer.log('Building BalanceCard widget', name: 'balance_card');
     final balanceAsync = ref.watch(balanceControllerProvider);
+    // Get the current visibility state
+    final isAmountVisible = ref.watch(balanceVisibilityProvider);
+
     developer.log('Balance state: ${balanceAsync.toString()}',
         name: 'balance_card');
 
@@ -30,7 +36,7 @@ class BalanceCard extends ConsumerWidget {
           data: (balance) {
             developer.log('Displaying balance data: ${balance.totalBalance}',
                 name: 'balance_card');
-            return _buildBalanceContent(context, balance);
+            return _buildBalanceContent(context, balance, isAmountVisible, ref);
           },
           loading: () {
             developer.log('Showing loading state', name: 'balance_card');
@@ -71,7 +77,8 @@ class BalanceCard extends ConsumerWidget {
     );
   }
 
-  Widget _buildBalanceContent(BuildContext context, Balance balance) {
+  Widget _buildBalanceContent(BuildContext context, Balance balance,
+      bool isAmountVisible, WidgetRef ref) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -82,14 +89,34 @@ class BalanceCard extends ConsumerWidget {
               'Balance Total',
               style: TextStyle(color: Colors.white70, fontSize: 14),
             ),
-            Text(
-              '${balance.month}/${balance.year}',
-              style: const TextStyle(color: Colors.white70, fontSize: 14),
+            Row(
+              children: [
+                // Eye icon to toggle visibility
+                IconButton(
+                  icon: Icon(
+                    isAmountVisible ? Icons.visibility : Icons.visibility_off,
+                    color: Colors.white70,
+                    size: 20,
+                  ),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                  onPressed: () {
+                    // Toggle visibility
+                    ref.read(balanceVisibilityProvider.notifier).state =
+                        !isAmountVisible;
+                  },
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  '${balance.month}/${balance.year}',
+                  style: const TextStyle(color: Colors.white70, fontSize: 14),
+                ),
+              ],
             ),
           ],
         ),
         const SizedBox(height: 4),
-        MoneyText(
+        _buildMoneyTextOrMasked(
           amount: balance.totalBalance,
           currency: balance.currency,
           style: const TextStyle(
@@ -97,7 +124,7 @@ class BalanceCard extends ConsumerWidget {
             fontSize: 28,
             fontWeight: FontWeight.bold,
           ),
-          useColors: false,
+          isVisible: isAmountVisible,
         ),
         const SizedBox(height: 16),
         Row(
@@ -108,6 +135,7 @@ class BalanceCard extends ConsumerWidget {
               balance.totalIncome,
               Icons.arrow_downward,
               balance.currency,
+              isAmountVisible,
             ),
             const SizedBox(width: 24),
             _buildBalanceItem(
@@ -116,15 +144,46 @@ class BalanceCard extends ConsumerWidget {
               balance.expenses,
               Icons.arrow_upward,
               balance.currency,
+              isAmountVisible,
             ),
           ],
         ),
         const SizedBox(height: 16),
         const Divider(color: Colors.white30, height: 1),
         const SizedBox(height: 16),
-        _buildIncomeDetails(context, balance),
+        _buildIncomeDetails(context, balance, isAmountVisible),
       ],
     );
+  }
+
+  // Helper method to show either the money amount or masked text
+  Widget _buildMoneyTextOrMasked({
+    required double amount,
+    required String currency,
+    required TextStyle style,
+    bool isVisible = true,
+    bool isExpense = false,
+    bool isIncome = false,
+    bool showSign = false,
+    bool useColors = false,
+  }) {
+    if (isVisible) {
+      return MoneyText(
+        amount: amount,
+        currency: currency,
+        style: style,
+        isExpense: isExpense,
+        isIncome: isIncome,
+        showSign: showSign,
+        useColors: useColors,
+      );
+    } else {
+      // Return masked text
+      return Text(
+        "$currency ********",
+        style: style,
+      );
+    }
   }
 
   Widget _buildBalanceItem(
@@ -133,6 +192,7 @@ class BalanceCard extends ConsumerWidget {
     double amount,
     IconData icon,
     String currency,
+    bool isAmountVisible,
   ) {
     return Expanded(
       child: Column(
@@ -163,7 +223,7 @@ class BalanceCard extends ConsumerWidget {
             ],
           ),
           const SizedBox(height: 4),
-          MoneyText(
+          _buildMoneyTextOrMasked(
             amount: amount,
             currency: currency,
             style: const TextStyle(
@@ -171,14 +231,15 @@ class BalanceCard extends ConsumerWidget {
               fontSize: 18,
               fontWeight: FontWeight.bold,
             ),
-            useColors: false,
+            isVisible: isAmountVisible,
           ),
         ],
       ),
     );
   }
 
-  Widget _buildIncomeDetails(BuildContext context, Balance balance) {
+  Widget _buildIncomeDetails(
+      BuildContext context, Balance balance, bool isAmountVisible) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -190,12 +251,22 @@ class BalanceCard extends ConsumerWidget {
         Row(
           children: [
             Expanded(
-              child: _buildIncomeItem(context, 'Ingreso Mensual',
-                  balance.monthlyIncome, balance.currency),
+              child: _buildIncomeItem(
+                context,
+                'Ingreso Mensual',
+                balance.monthlyIncome,
+                balance.currency,
+                isAmountVisible,
+              ),
             ),
             Expanded(
-              child: _buildIncomeItem(context, 'Ingreso Extra',
-                  balance.extraIncome, balance.currency),
+              child: _buildIncomeItem(
+                context,
+                'Ingreso Extra',
+                balance.extraIncome,
+                balance.currency,
+                isAmountVisible,
+              ),
             ),
           ],
         ),
@@ -204,7 +275,12 @@ class BalanceCard extends ConsumerWidget {
   }
 
   Widget _buildIncomeItem(
-      BuildContext context, String title, double amount, String currency) {
+    BuildContext context,
+    String title,
+    double amount,
+    String currency,
+    bool isAmountVisible,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -213,7 +289,7 @@ class BalanceCard extends ConsumerWidget {
           style: const TextStyle(color: Colors.white70, fontSize: 12),
         ),
         const SizedBox(height: 4),
-        MoneyText(
+        _buildMoneyTextOrMasked(
           amount: amount,
           currency: currency,
           style: const TextStyle(
@@ -221,7 +297,7 @@ class BalanceCard extends ConsumerWidget {
             fontSize: 16,
             fontWeight: FontWeight.bold,
           ),
-          useColors: false,
+          isVisible: isAmountVisible,
         ),
       ],
     );
