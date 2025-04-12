@@ -127,7 +127,7 @@ class TransactionDetailsScreen extends ConsumerWidget {
                     ),
                     const SizedBox(height: 24),
 
-                    // Amount
+                    // Amount section - Fix alignment by using a container with full width
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -139,19 +139,29 @@ class TransactionDetailsScreen extends ConsumerWidget {
                           ),
                         ),
                         const SizedBox(height: 8),
-                        MoneyText(
-                          amount: currentTransaction.amount,
-                          currency: 'Gs.',
-                          isExpense: isDebit,
-                          isIncome: !isDebit,
-                          showSign: true,
-                          style: const TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 12),
+                          decoration: BoxDecoration(
+                            border: Border.all(color: Colors.grey.shade300),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: MoneyText(
+                            amount: currentTransaction.amount,
+                            currency: 'Gs.',
+                            isExpense: isDebit,
+                            isIncome: !isDebit,
+                            showSign: true,
+                            style: const TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ),
                       ],
                     ),
+
                     const SizedBox(height: 24),
 
                     // Category dropdown
