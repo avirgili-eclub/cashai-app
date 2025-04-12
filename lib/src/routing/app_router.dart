@@ -29,6 +29,7 @@ import '../features/dashboard/domain/entities/category.dart';
 import '../features/dashboard/domain/entities/recent_transaction.dart';
 import '../features/dashboard/domain/entities/top_category.dart';
 import '../features/dashboard/presentation/screens/transaction_details_screen.dart';
+import '../features/dashboard/presentation/screens/all_transactions_screen.dart';
 
 part 'app_router.g.dart';
 
@@ -57,6 +58,7 @@ enum AppRoute {
   categories,
   categoryTransactions,
   transactionDetails, // Add this new route
+  allTransactions, // Add this new route
   expenses,
   incomes,
 }
@@ -77,7 +79,8 @@ GoRouter goRouter(Ref ref) {
       // Permitir acceso al dashboard, categories y transactions sin redirección
       if (path.startsWith('/dashboard') ||
           path.startsWith('/categories') ||
-          path.startsWith('/transactions')) {
+          path.startsWith('/transactions') ||
+          path.startsWith('/all-transactions')) {
         return null;
       }
 
@@ -187,6 +190,14 @@ GoRouter goRouter(Ref ref) {
             ),
           );
         },
+      ),
+      // Add the new route for all transactions
+      GoRoute(
+        path: '/all-transactions',
+        name: AppRoute.allTransactions.name,
+        pageBuilder: (context, state) => const NoTransitionPage(
+          child: AllTransactionsScreen(),
+        ),
       ),
       // Stateful navigation based on:
       // https://github.com/flutter/packages/blob/main/packages/go_router/example/lib/stateful_shell_route.dart

@@ -7,6 +7,7 @@ import '../../../../core/utils/emoji_formatter.dart';
 import '../../../../core/utils/color_utils.dart';
 import '../../../../core/presentation/widgets/money_text.dart';
 import '../../../../core/utils/money_formatter.dart';
+import '../../../../routing/app_router.dart'; // Add this import for AppRoute
 import '../../domain/entities/recent_transaction.dart';
 import '../controllers/transactions_controller.dart';
 
@@ -36,10 +37,11 @@ class TransactionsSection extends ConsumerWidget {
               ),
               TextButton(
                 onPressed: () {
-                  // This will navigate to a full transactions screen later
+                  // Navigate to full transactions screen
                   developer.log('Navigate to full transactions screen',
                       name: 'transactions_section');
-                  // TODO: Navigate to full transactions screen
+                  // Use AppRoute enum for type-safety
+                  context.pushNamed(AppRoute.allTransactions.name);
                 },
                 child: const Text(
                   'Ver Todo',
