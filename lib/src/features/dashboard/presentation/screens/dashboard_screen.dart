@@ -6,8 +6,7 @@ import '../../../../core/styles/app_styles.dart';
 import '../controllers/balance_controller.dart';
 import '../widgets/app_header.dart';
 import '../widgets/balance_card.dart';
-import '../widgets/quick_action_section.dart';
-import '../widgets/categories_section.dart';
+import '../widgets/collapsible_actions_card.dart';
 import '../widgets/transactions_section.dart';
 import '../widgets/bottom_nav_bar.dart';
 import '../widgets/send_audio_button.dart';
@@ -27,7 +26,7 @@ class DashboardScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Cash AI'),
-        backgroundColor: AppStyles.primaryColor, // Now actually using AppStyles
+        backgroundColor: AppStyles.primaryColor,
         foregroundColor: Colors.white,
         actions: [
           // This is just for testing purposes - you'd remove this in production
@@ -57,10 +56,9 @@ class DashboardScreen extends ConsumerWidget {
               ),
               const AppHeader(userName: 'Ale V.'),
               _buildBalanceCardWithErrorHandler(ref),
-              const SizedBox(height: 24),
-              const QuickActionSection(),
-              const SizedBox(height: 24),
-              const CategoriesSection(),
+              const SizedBox(height: 16),
+              // New collapsible card that contains both QuickAction and Categories sections
+              const CollapsibleActionsCard(),
               const SizedBox(height: 24),
               const TransactionsSection(),
               // Extra space at bottom for navigation bar

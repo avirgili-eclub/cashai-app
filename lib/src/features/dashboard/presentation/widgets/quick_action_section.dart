@@ -11,19 +11,7 @@ class QuickActionSection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                'Accesos Rápido',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
+          // Title removed as it will be in the parent container
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
