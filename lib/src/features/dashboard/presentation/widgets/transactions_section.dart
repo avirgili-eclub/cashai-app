@@ -1,6 +1,7 @@
 import 'dart:developer' as developer;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart'; // For date formatting
 import '../../../../core/utils/emoji_formatter.dart';
 import '../../../../core/utils/color_utils.dart';
@@ -131,10 +132,14 @@ class TransactionsSection extends ConsumerWidget {
 
     return GestureDetector(
       onTap: () {
-        // Navigate to transaction details page (to be implemented)
+        // Navigate to transaction details page
         developer.log('Tapped on transaction with ID: ${transaction.id}',
             name: 'transactions_section');
-        // TODO: Navigate to transaction details screen
+        context.pushNamed(
+          'transactionDetails',
+          pathParameters: {'id': transaction.id.toString()},
+          extra: transaction, // Pass the transaction object directly
+        );
       },
       child: Container(
         margin: const EdgeInsets.only(bottom: 8),

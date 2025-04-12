@@ -26,7 +26,9 @@ import '../features/categories/presentation/screens/category_transactions_screen
 // Import the Category entity
 import '../features/dashboard/domain/entities/category.dart';
 // Add this import for TopCategory
+import '../features/dashboard/domain/entities/recent_transaction.dart';
 import '../features/dashboard/domain/entities/top_category.dart';
+import '../features/dashboard/presentation/screens/transaction_details_screen.dart';
 
 part 'app_router.g.dart';
 
@@ -53,7 +55,8 @@ enum AppRoute {
   // Nuevas rutas para la app de finanzas
   dashboard,
   categories,
-  categoryTransactions, // Add this new route
+  categoryTransactions,
+  transactionDetails, // Add this new route
   expenses,
   incomes,
 }
@@ -71,8 +74,10 @@ GoRouter goRouter(Ref ref) {
       final didCompleteOnboarding = onboardingRepository.isOnboardingComplete();
       final path = state.uri.path;
 
-      // Permitir acceso al dashboard y categories sin redirección
-      if (path.startsWith('/dashboard') || path.startsWith('/categories')) {
+      // Permitir acceso al dashboard, categories y transactions sin redirección
+      if (path.startsWith('/dashboard') ||
+          path.startsWith('/categories') ||
+          path.startsWith('/transactions')) {
         return null;
       }
 
@@ -164,6 +169,21 @@ GoRouter goRouter(Ref ref) {
             child: CategoryTransactionsScreen(
               categoryId: categoryId,
               category: category,
+            ),
+          );
+        },
+      ),
+      // Add the new route for transaction details
+      GoRoute(
+        path: '/transactions/:id',
+        name: AppRoute.transactionDetails.name,
+        pageBuilder: (context, state) {
+          final transactionId = state.pathParameters['id'] ?? '';
+          final transaction = state.extra as RecentTransaction?;
+          return NoTransitionPage(
+            child: TransactionDetailsScreen(
+              transactionId: transactionId,
+              transaction: transaction,
             ),
           );
         },

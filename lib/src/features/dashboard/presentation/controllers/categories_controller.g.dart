@@ -7,7 +7,7 @@ part of 'categories_controller.dart';
 // **************************************************************************
 
 String _$categoriesWithLimitHash() =>
-    r'4c61eebbdd1fc7d23645d5ff3b9292a5dbdb4ba2';
+    r'f1096d634cdf03618624eebc2eb18077f00c8b6e';
 
 /// Copied from Dart SDK
 class _SystemHash {
