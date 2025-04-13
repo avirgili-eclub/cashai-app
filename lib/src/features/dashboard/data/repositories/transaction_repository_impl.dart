@@ -14,11 +14,20 @@ class TransactionRepositoryImpl implements TransactionRepository {
   TransactionRepositoryImpl({required this.dataSource, required this.userId});
 
   @override
-  Future<List<RecentTransaction>> getRecentTransactions() async {
+  Future<List<RecentTransaction>> getRecentTransactions({
+    DateTime? startDate,
+    DateTime? endDate,
+    int? limit,
+  }) async {
     developer.log('Getting recent transactions for userId: $userId',
         name: 'transaction_repository');
     try {
-      final transactions = await dataSource.getRecentTransactions(userId);
+      final transactions = await dataSource.getRecentTransactions(
+        userId,
+        startDate: startDate,
+        endDate: endDate,
+        limit: limit,
+      );
       developer.log(
           'Successfully retrieved ${transactions.length} transactions',
           name: 'transaction_repository');

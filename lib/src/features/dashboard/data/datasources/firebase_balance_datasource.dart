@@ -87,8 +87,35 @@ class FirebaseBalanceDataSource {
     }
   }
 
-  Future<List<RecentTransaction>> getRecentTransactions(String userId) async {
-    final url = '$baseUrl/users/$userId/recent-transactions';
+  Future<List<RecentTransaction>> getRecentTransactions(
+    String userId, {
+    DateTime? startDate,
+    DateTime? endDate,
+    int? limit,
+  }) async {
+    // Build URL with query parameters if provided
+    String url = '$baseUrl/users/$userId/recent-transactions';
+
+    // Build query parameters
+    final queryParams = <String, String>{};
+    if (startDate != null) {
+      queryParams['startDate'] =
+          startDate.toIso8601String().split('T')[0]; // YYYY-MM-DD format
+    }
+    if (endDate != null) {
+      queryParams['endDate'] =
+          endDate.toIso8601String().split('T')[0]; // YYYY-MM-DD format
+    }
+    if (limit != null) {
+      queryParams['limit'] = limit.toString();
+    }
+
+    // Add query parameters to URL if any exist
+    if (queryParams.isNotEmpty) {
+      url += '?';
+      url += queryParams.entries.map((e) => '${e.key}=${e.value}').join('&');
+    }
+
     developer.log('Making API request to: $url',
         name: 'transactions_datasource');
 

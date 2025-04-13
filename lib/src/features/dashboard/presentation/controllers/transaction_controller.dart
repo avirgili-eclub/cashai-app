@@ -14,12 +14,21 @@ class TransactionsController extends _$TransactionsController {
     return _fetchTransactions();
   }
 
-  Future<List<RecentTransaction>> _fetchTransactions() async {
-    developer.log('Fetching transactions data',
+  Future<List<RecentTransaction>> _fetchTransactions({
+    DateTime? startDate,
+    DateTime? endDate,
+    int? limit,
+  }) async {
+    developer.log(
+        'Fetching transactions data with date range: ${startDate?.toIso8601String()} to ${endDate?.toIso8601String()}, limit: $limit',
         name: 'transactions_controller');
     final repository = ref.watch(transactionRepositoryProvider);
     try {
-      final transactions = await repository.getRecentTransactions();
+      final transactions = await repository.getRecentTransactions(
+        startDate: startDate,
+        endDate: endDate,
+        limit: limit,
+      );
       developer.log('Transactions fetched successfully: ${transactions.length}',
           name: 'transactions_controller');
       return transactions;
@@ -30,11 +39,21 @@ class TransactionsController extends _$TransactionsController {
     }
   }
 
-  Future<void> refreshTransactions() async {
-    developer.log('Manual refresh triggered', name: 'transactions_controller');
+  Future<void> refreshTransactions({
+    DateTime? startDate,
+    DateTime? endDate,
+    int? limit,
+  }) async {
+    developer.log(
+        'Manual refresh triggered with date range: ${startDate?.toIso8601String()} to ${endDate?.toIso8601String()}, limit: $limit',
+        name: 'transactions_controller');
     state = const AsyncValue.loading();
     try {
-      final transactions = await _fetchTransactions();
+      final transactions = await _fetchTransactions(
+        startDate: startDate,
+        endDate: endDate,
+        limit: limit,
+      );
       developer.log('Transactions refreshed successfully',
           name: 'transactions_controller');
       state = AsyncValue.data(transactions);

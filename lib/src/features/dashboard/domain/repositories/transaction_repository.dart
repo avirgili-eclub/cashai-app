@@ -5,7 +5,11 @@ import '../../data/repositories/transaction_repository_impl.dart';
 part 'transaction_repository.g.dart';
 
 abstract class TransactionRepository {
-  Future<List<RecentTransaction>> getRecentTransactions();
+  Future<List<RecentTransaction>> getRecentTransactions({
+    DateTime? startDate,
+    DateTime? endDate,
+    int? limit,
+  });
 }
 
 @riverpod

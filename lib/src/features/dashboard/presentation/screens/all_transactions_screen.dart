@@ -43,11 +43,7 @@ class _AllTransactionsScreenState extends ConsumerState<AllTransactionsScreen> {
     'diciembre' // December
   ];
 
-  final List<int> years = [
-    DateTime.now().year,
-    DateTime.now().year - 1,
-    DateTime.now().year - 2
-  ];
+  final List<int> years = [DateTime.now().year, DateTime.now().year - 1];
 
   @override
   void initState() {
@@ -64,12 +60,40 @@ class _AllTransactionsScreenState extends ConsumerState<AllTransactionsScreen> {
         currentMonth =
             DateFormat('MMMM', 'es').format(DateTime.now()).toLowerCase();
       });
+
+      // Fetch initial data with current month and year filter
+      _refreshTransactionsWithDateFilter();
     });
 
     // Reset filter when screen initializes
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(transactionFilterTypeProvider.notifier).state = '';
     });
+  }
+
+  // Helper method to refresh transactions with date filter
+  void _refreshTransactionsWithDateFilter() {
+    // Find month index (1-based) from the month name
+    final monthIndex = months.indexOf(currentMonth) + 1;
+    if (monthIndex > 0) {
+      // Calculate start and end date for the selected month and year
+      final startDate = DateTime(currentYear, monthIndex, 1);
+      // End date is the last day of the month
+      final endDate = (monthIndex < 12)
+          ? DateTime(currentYear, monthIndex + 1, 0)
+          : DateTime(currentYear + 1, 1, 0);
+
+      developer.log(
+          'Refreshing transactions for date range: ${startDate.toIso8601String()} to ${endDate.toIso8601String()}',
+          name: 'all_transactions_screen');
+
+      // Refresh transactions with date filter
+      ref.read(transactionsControllerProvider.notifier).refreshTransactions(
+            startDate: startDate,
+            endDate: endDate,
+            limit: 0, // Optional limit for the number of transactions
+          );
+    }
   }
 
   @override
@@ -121,8 +145,8 @@ class _AllTransactionsScreenState extends ConsumerState<AllTransactionsScreen> {
                             setState(() {
                               currentMonth = newValue;
                             });
-                            // Here you would refresh transactions based on new month
-                            // This would be implemented in a real app
+                            // Refresh transactions with the new month filter
+                            _refreshTransactionsWithDateFilter();
                           }
                         },
                       ),
@@ -155,8 +179,8 @@ class _AllTransactionsScreenState extends ConsumerState<AllTransactionsScreen> {
                             setState(() {
                               currentYear = newValue;
                             });
-                            // Here you would refresh transactions based on new year
-                            // This would be implemented in a real app
+                            // Refresh transactions with the new year filter
+                            _refreshTransactionsWithDateFilter();
                           }
                         },
                       ),
