@@ -195,9 +195,13 @@ GoRouter goRouter(Ref ref) {
       GoRoute(
         path: '/all-transactions',
         name: AppRoute.allTransactions.name,
-        pageBuilder: (context, state) => const NoTransitionPage(
-          child: AllTransactionsScreen(),
-        ),
+        pageBuilder: (context, state) {
+          // Extract filter from query parameters if available
+          final initialFilter = state.uri.queryParameters['filter'] ?? '';
+          return NoTransitionPage(
+            child: AllTransactionsScreen(initialFilter: initialFilter),
+          );
+        },
       ),
       // Stateful navigation based on:
       // https://github.com/flutter/packages/blob/main/packages/go_router/example/lib/stateful_shell_route.dart

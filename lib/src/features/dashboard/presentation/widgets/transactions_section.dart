@@ -41,7 +41,12 @@ class TransactionsSection extends ConsumerWidget {
                   developer.log('Navigate to full transactions screen',
                       name: 'transactions_section');
                   // Use AppRoute enum for type-safety
-                  context.pushNamed(AppRoute.allTransactions.name);
+                  context.pushNamed(
+                    AppRoute.allTransactions.name,
+                    queryParameters: {
+                      'filter': ''
+                    }, // Explicitly pass empty filter
+                  );
                 },
                 child: const Text(
                   'Ver Todo',

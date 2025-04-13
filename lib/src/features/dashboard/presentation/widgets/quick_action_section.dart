@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import '../../../../routing/app_router.dart';
 import 'quick_action_button.dart';
 
 class QuickActionSection extends StatelessWidget {
@@ -20,14 +22,26 @@ class QuickActionSection extends StatelessWidget {
                 label: 'Ingresos',
                 backgroundColor: Colors.green.withOpacity(0.1),
                 iconColor: Colors.green,
-                onPressed: () {},
+                onPressed: () {
+                  // Navigate to transactions screen with income filter
+                  context.pushNamed(
+                    AppRoute.allTransactions.name,
+                    queryParameters: {'filter': 'CREDITO'},
+                  );
+                },
               ),
               QuickActionButton(
                 icon: Icons.arrow_upward,
                 label: 'Gastos',
                 backgroundColor: Colors.orange.withOpacity(0.1),
                 iconColor: Colors.orange,
-                onPressed: () {},
+                onPressed: () {
+                  // Navigate to transactions screen with expense filter
+                  context.pushNamed(
+                    AppRoute.allTransactions.name,
+                    queryParameters: {'filter': 'DEBITO'},
+                  );
+                },
               ),
               QuickActionButton(
                 icon: Icons.qr_code_scanner,

@@ -14,7 +14,12 @@ import '../controllers/transaction_controller.dart';
 final transactionFilterTypeProvider = StateProvider<String>((ref) => '');
 
 class AllTransactionsScreen extends ConsumerStatefulWidget {
-  const AllTransactionsScreen({Key? key}) : super(key: key);
+  final String initialFilter;
+
+  const AllTransactionsScreen({
+    Key? key,
+    this.initialFilter = '', // Default to empty string
+  }) : super(key: key);
 
   @override
   ConsumerState<AllTransactionsScreen> createState() =>
@@ -65,9 +70,15 @@ class _AllTransactionsScreenState extends ConsumerState<AllTransactionsScreen> {
       _refreshTransactionsWithDateFilter();
     });
 
-    // Reset filter when screen initializes
+    // Set initial filter if provided
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(transactionFilterTypeProvider.notifier).state = '';
+      // Safely access initialFilter with null check
+      final filter = widget.initialFilter;
+      if (filter.isNotEmpty) {
+        ref.read(transactionFilterTypeProvider.notifier).state = filter;
+      } else {
+        ref.read(transactionFilterTypeProvider.notifier).state = '';
+      }
     });
   }
 
