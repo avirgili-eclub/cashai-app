@@ -48,14 +48,30 @@ class QuickActionSection extends StatelessWidget {
                 label: 'Escanear',
                 backgroundColor: Colors.grey[200]!,
                 iconColor: Colors.black,
-                onPressed: () {},
+                onPressed: () {
+                  // Navigate to add transaction screen with Scan tab selected
+                  context.pushNamed(
+                    AppRoute.addTransaction.name,
+                    queryParameters: {
+                      'tab': '0'
+                    }, // 0 is the index for Scan tab
+                  );
+                },
               ),
               QuickActionButton(
                 icon: Icons.upload_file,
                 label: 'Subir',
                 backgroundColor: Colors.grey[200]!,
                 iconColor: Colors.black,
-                onPressed: () {},
+                onPressed: () {
+                  // Navigate to add transaction screen with Extract tab selected
+                  context.pushNamed(
+                    AppRoute.addTransaction.name,
+                    queryParameters: {
+                      'tab': '2'
+                    }, // 2 is the index for Extract tab
+                  );
+                },
               ),
             ],
           ),

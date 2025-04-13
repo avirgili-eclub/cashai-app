@@ -30,6 +30,8 @@ import '../features/dashboard/domain/entities/recent_transaction.dart';
 import '../features/dashboard/domain/entities/top_category.dart';
 import '../features/dashboard/presentation/screens/transaction_details_screen.dart';
 import '../features/dashboard/presentation/screens/all_transactions_screen.dart';
+// Add this import at the top with the other imports
+import '../features/transactions/presentation/screens/add_transaction_screen.dart';
 
 part 'app_router.g.dart';
 
@@ -59,6 +61,7 @@ enum AppRoute {
   categoryTransactions,
   transactionDetails, // Add this new route
   allTransactions, // Add this new route
+  addTransaction, // Add this new route enum
   expenses,
   incomes,
 }
@@ -80,7 +83,9 @@ GoRouter goRouter(Ref ref) {
       if (path.startsWith('/dashboard') ||
           path.startsWith('/categories') ||
           path.startsWith('/transactions') ||
-          path.startsWith('/all-transactions')) {
+          path.startsWith('/all-transactions') ||
+          path.startsWith('/add-transaction')) {
+        // Add this path
         return null;
       }
 
@@ -200,6 +205,21 @@ GoRouter goRouter(Ref ref) {
           final initialFilter = state.uri.queryParameters['filter'] ?? '';
           return NoTransitionPage(
             child: AllTransactionsScreen(initialFilter: initialFilter),
+          );
+        },
+      ),
+      // Add Transaction route
+      GoRoute(
+        path: '/add-transaction',
+        name: AppRoute.addTransaction.name,
+        pageBuilder: (context, state) {
+          // Get the tab parameter from query parameters and convert to int
+          final tabParam = state.uri.queryParameters['tab'];
+          final initialTabIndex =
+              tabParam != null ? int.tryParse(tabParam) ?? 0 : 0;
+
+          return NoTransitionPage(
+            child: AddTransactionScreen(initialTabIndex: initialTabIndex),
           );
         },
       ),
