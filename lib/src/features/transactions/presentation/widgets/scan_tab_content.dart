@@ -105,24 +105,45 @@ class _ScanTabContentState extends State<ScanTabContent>
     });
 
     try {
-      // Use the method from the documentation
-      List<String>? scannedDocuments;
-      try {
-        // This will open the native scanner UI
-        scannedDocuments = await _docScanner.getScannedDocumentAsImages();
-      } on PlatformException catch (e) {
-        developer.log('Platform exception in document scanning: $e',
-            name: 'scan_tab_content', error: e);
+      // First try with direct camera capture as fallback
+      final XFile? rawImage = await _controller?.takePicture();
+
+      if (rawImage == null) {
         setState(() {
           _isProcessing = false;
         });
         return;
       }
 
+      // Now try to process with document scanner
+      List<String>? scannedDocuments;
+      try {
+        // Try to use the native scanner with the captured image
+        scannedDocuments = await _docScanner.getScannedDocumentAsImages();
+      } on PlatformException catch (e) {
+        developer.log('Platform exception in document scanning: $e',
+            name: 'scan_tab_content', error: e);
+        // Fall back to raw image if scanner fails
+        setState(() {
+          _scannedImage = File(rawImage.path);
+          _isProcessing = false;
+        });
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Imagen capturada correctamente'),
+              backgroundColor: Colors.green,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+        return;
+      }
+
       // Check if we got any scanned documents
       if (scannedDocuments != null && scannedDocuments.isNotEmpty) {
         setState(() {
-          // Use .first after properly checking for null and empty
           _scannedImage = File(scannedDocuments!.first);
           _isProcessing = false;
         });
@@ -137,15 +158,17 @@ class _ScanTabContentState extends State<ScanTabContent>
           );
         }
       } else {
+        // Use the raw captured image if no processed image is returned
         setState(() {
+          _scannedImage = File(rawImage.path);
           _isProcessing = false;
         });
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Escaneo cancelado o no se detectó documento'),
-              backgroundColor: Colors.orange,
+              content: Text('Imagen capturada correctamente'),
+              backgroundColor: Colors.green,
               behavior: SnackBarBehavior.floating,
             ),
           );
@@ -332,8 +355,9 @@ class _ScanTabContentState extends State<ScanTabContent>
                   CameraPreview(_controller!),
                   Center(
                     child: Container(
-                      width: 250,
-                      height: 350,
+                      width: 300,
+                      height:
+                          500, // Increased from 350 to 400 for a taller frame
                       decoration: BoxDecoration(
                         border: Border.all(
                           color: AppStyles.primaryColor,
@@ -344,7 +368,7 @@ class _ScanTabContentState extends State<ScanTabContent>
                     ),
                   ),
                   Positioned(
-                    bottom: 32.0,
+                    bottom: 16.0,
                     left: 0,
                     right: 0,
                     child: Center(
