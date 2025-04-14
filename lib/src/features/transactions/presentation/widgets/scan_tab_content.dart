@@ -78,7 +78,7 @@ class _ScanTabContentState extends State<ScanTabContent>
 
       _controller = CameraController(
         camera,
-        ResolutionPreset.medium,
+        ResolutionPreset.high,
         enableAudio: false,
         imageFormatGroup: ImageFormatGroup.jpeg,
       );
@@ -98,51 +98,79 @@ class _ScanTabContentState extends State<ScanTabContent>
   }
 
   Future<void> _scanDocument() async {
-    if (_isProcessing) return;
+    developer.log('_scanDocument method started', name: 'scan_tab_content');
+    if (_isProcessing) {
+      developer.log('_scanDocument aborted: already processing',
+          name: 'scan_tab_content');
+      return;
+    }
 
     setState(() {
       _isProcessing = true;
     });
+    developer.log('_isProcessing set to true', name: 'scan_tab_content');
 
-    try {
-      // First try with direct camera capture as fallback
-      final XFile? rawImage = await _controller?.takePicture();
+// Añadir un timeout para evitar quedarse en estado de carga indefinidamente
+    developer.log('Setting up timeout timer', name: 'scan_tab_content');
+    Timer timeout = Timer(const Duration(seconds: 20), () async {
+      developer.log('Timeout timer triggered after 20 seconds',
+          name: 'scan_tab_content');
+      if (_isProcessing && mounted) {
+        developer.log('Timeout ocurred, falling back to manual capture',
+            name: 'scan_tab_content');
 
-      if (rawImage == null) {
-        setState(() {
-          _isProcessing = false;
-        });
-        return;
-      }
-
-      // Now try to process with document scanner
-      List<String>? scannedDocuments;
-      try {
-        // Try to use the native scanner with the captured image
-        scannedDocuments = await _docScanner.getScannedDocumentAsImages();
-      } on PlatformException catch (e) {
-        developer.log('Platform exception in document scanning: $e',
-            name: 'scan_tab_content', error: e);
-        // Fall back to raw image if scanner fails
-        setState(() {
-          _scannedImage = File(rawImage.path);
-          _isProcessing = false;
-        });
-
+        // Informar al usuario
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Imagen capturada correctamente'),
-              backgroundColor: Colors.green,
+              content: Text(
+                  'El escáner está tardando demasiado. Usando captura manual.'),
+              backgroundColor: Colors.orange,
               behavior: SnackBarBehavior.floating,
             ),
           );
         }
+
+        // Ejecutar captura manual como fallback
+        await _captureManualImage();
+      }
+    });
+
+    try {
+      developer.log('Attempting to scan document with _docScanner',
+          name: 'scan_tab_content');
+      // Use the document scanner directly - this will open the native scanner UI
+      // which handles edge detection and automatic capture
+      List<String>? scannedDocuments;
+      try {
+        developer.log('Calling getScannedDocumentAsImages()',
+            name: 'scan_tab_content');
+        scannedDocuments = await _docScanner.getScannedDocumentAsImages();
+        developer.log(
+            'getScannedDocumentAsImages() completed. Results: ${scannedDocuments?.length ?? 0} documents',
+            name: 'scan_tab_content');
+      } on PlatformException catch (e) {
+        developer.log(
+            'Platform exception in document scanning: ${e.code}, ${e.message}',
+            name: 'scan_tab_content',
+            error: e);
+
+        // Utilizar el método de captura manual
+        await _captureManualImage();
+
+        // Cancelar el timeout después de la captura manual
+        timeout.cancel();
+        developer.log('Timeout timer cancelled', name: 'scan_tab_content');
         return;
       }
 
       // Check if we got any scanned documents
+      developer.log('Checking scanned documents results',
+          name: 'scan_tab_content');
       if (scannedDocuments != null && scannedDocuments.isNotEmpty) {
+        developer.log(
+            'Setting _scannedImage from scanner: ${scannedDocuments.first}',
+            name: 'scan_tab_content');
         setState(() {
           _scannedImage = File(scannedDocuments!.first);
           _isProcessing = false;
@@ -158,24 +186,24 @@ class _ScanTabContentState extends State<ScanTabContent>
           );
         }
       } else {
-        // Use the raw captured image if no processed image is returned
+        developer.log('No documents returned from scanner',
+            name: 'scan_tab_content');
         setState(() {
-          _scannedImage = File(rawImage.path);
           _isProcessing = false;
         });
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Imagen capturada correctamente'),
-              backgroundColor: Colors.green,
+              content: Text('Escaneo cancelado o no se detectó documento'),
+              backgroundColor: Colors.orange,
               behavior: SnackBarBehavior.floating,
             ),
           );
         }
       }
     } catch (e) {
-      developer.log('Error scanning document: $e',
+      developer.log('Unhandled error scanning document: $e',
           name: 'scan_tab_content', error: e);
       setState(() {
         _isProcessing = false;
@@ -190,6 +218,11 @@ class _ScanTabContentState extends State<ScanTabContent>
           ),
         );
       }
+    } finally {
+      timeout.cancel();
+      developer.log('Timeout timer cancelled in finally block',
+          name: 'scan_tab_content');
+      developer.log('_scanDocument method completed', name: 'scan_tab_content');
     }
   }
 
@@ -203,43 +236,75 @@ class _ScanTabContentState extends State<ScanTabContent>
       });
 
       try {
-        // For gallery images, we can still use the regular camera scanning
-        // after selecting the image
-        List<String>? processedImages;
-        try {
-          // Use the path of the picked image as input for the scanner
-          processedImages = await _docScanner.getScannedDocumentAsImages();
-        } on PlatformException catch (e) {
-          developer.log('Platform exception in gallery processing: $e',
-              name: 'scan_tab_content', error: e);
-          setState(() {
-            _isProcessing = false;
-          });
-          return;
-        }
+        // For gallery images, we'll directly use the selected image
+        // instead of trying to use the document scanner again
+        setState(() {
+          _scannedImage = File(image.path);
+          _isProcessing = false;
+        });
 
-        if (processedImages != null && processedImages.isNotEmpty) {
-          setState(() {
-            // Use .first after proper null and empty check
-            _scannedImage = File(processedImages!.first);
-            _isProcessing = false;
-          });
-        } else {
-          // If scanner returned no results, just use the original image
-          setState(() {
-            _scannedImage = File(image.path);
-            _isProcessing = false;
-          });
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Imagen seleccionada correctamente'),
+              backgroundColor: Colors.green,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
         }
       } catch (e) {
         developer.log('Error processing gallery image: $e',
             name: 'scan_tab_content', error: e);
         setState(() {
           _isProcessing = false;
-          // Fallback to original image on error
-          _scannedImage = File(image.path);
         });
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Error al procesar la imagen. Intenta de nuevo.'),
+              backgroundColor: Colors.red,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
       }
+    }
+  }
+
+  Future<void> _captureManualImage() async {
+    developer.log('Falling back to manual camera capture',
+        name: 'scan_tab_content');
+
+    final XFile? rawImage = await _controller?.takePicture();
+    developer.log(
+        'takePicture() completed. Result: ${rawImage != null ? 'success' : 'null'}',
+        name: 'scan_tab_content');
+
+    if (rawImage != null) {
+      developer.log(
+          'Setting _scannedImage from camera capture: ${rawImage.path}',
+          name: 'scan_tab_content');
+      setState(() {
+        _scannedImage = File(rawImage.path);
+        _isProcessing = false;
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Imagen capturada correctamente'),
+            backgroundColor: Colors.green,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } else {
+      developer.log('Camera capture returned null image',
+          name: 'scan_tab_content');
+      setState(() {
+        _isProcessing = false;
+      });
     }
   }
 
@@ -355,9 +420,8 @@ class _ScanTabContentState extends State<ScanTabContent>
                   CameraPreview(_controller!),
                   Center(
                     child: Container(
-                      width: 300,
-                      height:
-                          500, // Increased from 350 to 400 for a taller frame
+                      width: 280,
+                      height: 450, // Taller frame for receipts
                       decoration: BoxDecoration(
                         border: Border.all(
                           color: AppStyles.primaryColor,
@@ -482,6 +546,54 @@ class _ScanTabContentState extends State<ScanTabContent>
                       _controller!.value.flashMode == FlashMode.torch
                           ? Icons.flash_on
                           : Icons.flash_off,
+                      size: 24.0,
+                      color: AppStyles.primaryColor,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 24.0),
+              // Nuevo botón para cambiar entre cámaras
+              Material(
+                elevation: 2.0,
+                shape: const CircleBorder(),
+                color: Colors.white,
+                child: InkWell(
+                  onTap: () async {
+                    if (_cameras != null && _cameras!.length > 1) {
+                      int currentCameraIndex =
+                          _cameras!.indexOf(_controller!.description);
+                      int newCameraIndex =
+                          (currentCameraIndex + 1) % _cameras!.length;
+
+                      setState(() {
+                        _isCameraInitialized = false;
+                      });
+
+                      await _controller?.dispose();
+
+                      _controller = CameraController(
+                        _cameras![newCameraIndex],
+                        ResolutionPreset.medium,
+                        enableAudio: false,
+                        imageFormatGroup: ImageFormatGroup.jpeg,
+                      );
+
+                      await _controller!.initialize();
+                      await _controller!.setFlashMode(FlashMode.auto);
+
+                      setState(() {
+                        _isCameraInitialized = true;
+                      });
+                    }
+                  },
+                  customBorder: const CircleBorder(),
+                  child: Container(
+                    width: 56.0,
+                    height: 56.0,
+                    padding: const EdgeInsets.all(16.0),
+                    child: Icon(
+                      Icons.flip_camera_ios,
                       size: 24.0,
                       color: AppStyles.primaryColor,
                     ),
