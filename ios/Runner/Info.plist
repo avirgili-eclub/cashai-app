@@ -54,5 +54,9 @@
 	<array>
     	<string>audio</string>
 	</array>
+	<key>NSCameraUsageDescription</key>
+    <string>Necesitamos acceso a tu cámara para escanear tickets y facturas</string>
+    <key>NSPhotoLibraryUsageDescription</key>
+    <string>Necesitamos acceso a tus fotos para guardar los tickets escaneados</string>
 </dict>
 </plist>
