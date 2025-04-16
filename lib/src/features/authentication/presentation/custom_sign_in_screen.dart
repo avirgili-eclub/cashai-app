@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:starter_architecture_flutter_firebase/src/constants/app_sizes.dart';
 import 'package:starter_architecture_flutter_firebase/src/core/styles/app_styles.dart';
+import 'dart:io' show Platform;
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_ui_oauth_google/firebase_ui_oauth_google.dart';
+import 'package:firebase_ui_oauth_apple/firebase_ui_oauth_apple.dart';
 
 class CustomSignInScreen extends ConsumerStatefulWidget {
   const CustomSignInScreen({super.key});
@@ -62,6 +66,66 @@ class _CustomSignInScreenState extends ConsumerState<CustomSignInScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Ha ocurrido un error. Inténtalo de nuevo.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _signInWithGoogle() async {
+    try {
+      setState(() {
+        _isLoading = true;
+      });
+      // Implementation will be added later
+      await Future.delayed(const Duration(seconds: 1));
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Inicio de sesión con Google exitoso')),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Error al iniciar sesión con Google'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _signInWithApple() async {
+    try {
+      setState(() {
+        _isLoading = true;
+      });
+      // Implementation will be added later
+      await Future.delayed(const Duration(seconds: 1));
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Inicio de sesión con Apple exitoso')),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Error al iniciar sesión con Apple'),
             backgroundColor: Colors.red,
           ),
         );
@@ -352,26 +416,107 @@ class _CustomSignInScreenState extends ConsumerState<CustomSignInScreen> {
 
                   const SizedBox(height: 24),
 
-                  // Anonymous sign in button
-                  TextButton.icon(
-                    onPressed: () {
-                      // Implement anonymous sign in functionality
-                    },
-                    icon: Icon(
-                      Icons.person_outline,
-                      color: AppStyles.primaryColor,
-                    ),
-                    label: Text(
-                      'Continuar como invitado',
-                      style: TextStyle(
-                        color: AppStyles.primaryColor,
+                  // Social Sign-in Buttons
+                  Column(
+                    children: [
+                      // Google Sign In Button
+                      _SocialSignInButton(
+                        onPressed: _signInWithGoogle,
+                        text: _isLogin
+                            ? 'Iniciar sesión con Google'
+                            : 'Registrarse con Google',
+                        icon: const Icon(
+                          Icons
+                              .g_mobiledata, // Replace with Icon instead of Image
+                          color: Colors.blue,
+                          size: 24.0,
+                        ),
+                        backgroundColor: Colors.white,
+                        textColor: Colors.black87,
+                        borderColor: Colors.grey[300]!,
                       ),
-                    ),
+                      const SizedBox(height: 12),
+
+                      // Apple Sign In Button - only shown on iOS
+                      if (Platform.isIOS)
+                        _SocialSignInButton(
+                          onPressed: _signInWithApple,
+                          text: _isLogin
+                              ? 'Iniciar sesión con Apple'
+                              : 'Registrarse con Apple',
+                          icon: const Icon(
+                            Icons.apple,
+                            color: Colors.white,
+                            size: 24,
+                          ),
+                          backgroundColor: Colors.black,
+                          textColor: Colors.white,
+                          borderColor: Colors.black,
+                        ),
+                    ],
                   ),
                 ],
               ),
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+// Custom social sign-in button widget
+class _SocialSignInButton extends StatelessWidget {
+  final VoidCallback onPressed;
+  final String text;
+  final Widget icon;
+  final Color backgroundColor;
+  final Color textColor;
+  final Color borderColor;
+
+  const _SocialSignInButton({
+    required this.onPressed,
+    required this.text,
+    required this.icon,
+    required this.backgroundColor,
+    required this.textColor,
+    required this.borderColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: double.infinity,
+      height: 50,
+      child: ElevatedButton(
+        onPressed: onPressed,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: backgroundColor,
+          foregroundColor: textColor,
+          elevation: 1,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+            side: BorderSide(color: borderColor),
+          ),
+        ),
+        // Fix overflow by using Row instead of ElevatedButton.icon
+        child: Row(
+          mainAxisSize: MainAxisSize.min, // Make the row take minimum space
+          mainAxisAlignment: MainAxisAlignment.center, // Center the content
+          children: [
+            // Icon with padding
+            Padding(
+              padding: const EdgeInsets.only(right: 12.0),
+              child: icon,
+            ),
+            // Text that can wrap or be clipped if needed
+            Flexible(
+              child: Text(
+                text,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
         ),
       ),
     );
