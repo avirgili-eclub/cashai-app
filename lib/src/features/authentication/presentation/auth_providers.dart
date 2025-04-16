@@ -1,15 +1,7 @@
-import 'package:firebase_auth/firebase_auth.dart'
-    hide EmailAuthProvider, AuthProvider;
-import 'package:firebase_ui_auth/firebase_ui_auth.dart';
-import 'package:riverpod/riverpod.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-part 'auth_providers.g.dart';
-
-@Riverpod(keepAlive: true)
-List<AuthProvider<AuthListener, AuthCredential>> authProviders(
-    Ref ref) {
-  return [
-    EmailAuthProvider(),
-  ];
-}
+// This provider will be used to configure authentication options
+// We'll implement this later when we connect to the Spring Boot backend
+final authProvidersProvider = Provider<List<String>>((ref) {
+  return ['email', 'anonymous'];
+});

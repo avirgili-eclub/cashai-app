@@ -70,7 +70,8 @@ enum AppRoute {
 GoRouter goRouter(Ref ref) {
   final authRepository = ref.watch(authRepositoryProvider);
   return GoRouter(
-    initialLocation: '/dashboard', // Cambiar la ruta inicial a dashboard
+    //initialLocation: '/dashboard',
+    initialLocation: '/signIn', // Change initial location to sign-in screen
     navigatorKey: _rootNavigatorKey,
     debugLogDiagnostics: true,
     redirect: (context, state) {
@@ -80,14 +81,14 @@ GoRouter goRouter(Ref ref) {
       final path = state.uri.path;
 
       // Permitir acceso al dashboard, categories y transactions sin redirección
-      if (path.startsWith('/dashboard') ||
-          path.startsWith('/categories') ||
-          path.startsWith('/transactions') ||
-          path.startsWith('/all-transactions') ||
-          path.startsWith('/add-transaction')) {
-        // Add this path
-        return null;
-      }
+      // if (path.startsWith('/dashboard') ||
+      //     path.startsWith('/categories') ||
+      //     path.startsWith('/transactions') ||
+      //     path.startsWith('/all-transactions') ||
+      //     path.startsWith('/add-transaction')) {
+      //   // Add this path
+      //   return null;
+      // }
 
       if (!didCompleteOnboarding) {
         if (path != '/onboarding') {
@@ -99,7 +100,7 @@ GoRouter goRouter(Ref ref) {
       final isLoggedIn = authRepository.currentUser != null;
       if (isLoggedIn) {
         if (path.startsWith('/onboarding') || path.startsWith('/signIn')) {
-          return '/jobs';
+          return '/dashboard'; // Redirect to dashboard instead of jobs when logged in
         }
       } else {
         if (path.startsWith('/onboarding') ||
@@ -107,7 +108,9 @@ GoRouter goRouter(Ref ref) {
             path.startsWith('/entries') ||
             path.startsWith('/account') ||
             path.startsWith('/expenses') ||
-            path.startsWith('/incomes')) {
+            path.startsWith('/incomes') ||
+            path.startsWith('/dashboard')) {
+          // Add dashboard to protected routes
           return '/signIn';
         }
       }
