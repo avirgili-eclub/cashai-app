@@ -114,18 +114,58 @@ class _CustomSignInScreenState extends ConsumerState<CustomSignInScreen> {
       setState(() {
         _isLoading = true;
       });
-      // Implementation will be added later
-      await Future.delayed(const Duration(seconds: 1));
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Inicio de sesión con Apple exitoso')),
-        );
+
+      // Fixed implementation for Apple Sign-In
+      if (Platform.isIOS) {
+        // Use OAuthProvider directly from Firebase Auth instead of AppleProvider from UI package
+        final appleProvider = OAuthProvider('apple.com');
+
+        try {
+          // This is the correct way to use Apple sign-in with Firebase Auth
+          final auth = FirebaseAuth.instance;
+          final credential = await auth.signInWithProvider(appleProvider);
+
+          // Extract user data from the credential
+          final user = credential.user;
+          final displayName = user?.displayName;
+          final email = user?.email;
+
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                  content: Text(
+                      'Inicio de sesión exitoso${displayName != null ? ' como $displayName' : ''}${email != null ? ' ($email)' : ''}')),
+            );
+            // Here you would navigate to your app's home screen
+            // Navigator.of(context).pushReplacementNamed('/dashboard');
+          }
+        } catch (e) {
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Error con Apple Sign-In: ${e.toString()}'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+        }
+      } else {
+        // Show message that Apple Sign-In isn't available on this platform
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                  'Inicio de sesión con Apple solo está disponible en dispositivos iOS'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        }
       }
     } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Error al iniciar sesión con Apple'),
+          SnackBar(
+            content: Text('Error al iniciar sesión con Apple: ${e.toString()}'),
             backgroundColor: Colors.red,
           ),
         );

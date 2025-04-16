@@ -58,5 +58,25 @@
     <string>Necesitamos acceso a tu cámara para escanear tickets y facturas</string>
     <key>NSPhotoLibraryUsageDescription</key>
     <string>Necesitamos acceso a tus fotos para guardar los tickets escaneados</string>
+	
+	<!-- Add this section for Apple Sign In -->
+    <key>CFBundleURLTypes</key>
+    <array>
+        <dict>
+            <key>CFBundleTypeRole</key>
+            <string>Editor</string>
+            <key>CFBundleURLSchemes</key>
+            <array>
+                <!-- Your app's Firebase URL scheme will be here -->
+                <string>your.app.bundle.id</string>
+            </array>
+        </dict>
+    </array>
+    
+    <!-- Also add capability -->
+    <key>com.apple.developer.applesignin</key>
+    <array>
+        <string>Default</string>
+    </array>
 </dict>
 </plist>
