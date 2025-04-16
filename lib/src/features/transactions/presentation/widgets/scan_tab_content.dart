@@ -28,6 +28,9 @@ class _ScanTabContentState extends State<ScanTabContent>
   bool _isProcessing = false;
   final FlutterDocScanner _docScanner = FlutterDocScanner();
 
+  // Tracking scanning folder size and last cleanup time
+  DateTime _lastCacheCleanup = DateTime.now();
+
   @override
   void initState() {
     super.initState();
@@ -57,6 +60,93 @@ class _ScanTabContentState extends State<ScanTabContent>
     }
   }
 
+  // Función para determinar la resolución óptima basada en las características del dispositivo
+  Future<ResolutionPreset> _getOptimalResolutionPreset() async {
+    // Verificamos el espacio disponible para determinar si podemos usar resoluciones altas
+    final directory = await getTemporaryDirectory();
+    final stat = await directory.stat();
+    final freeSpace = stat.size; // Esto es una aproximación
+
+    // Si el dispositivo tiene menos de 100MB libres, usar resolución media
+    if (freeSpace < 100 * 1024 * 1024) {
+      developer.log('Espacio limitado, usando resolución media',
+          name: 'scan_tab_content');
+      return ResolutionPreset.medium;
+    }
+
+    // También podríamos verificar la memoria RAM disponible, pero eso requiere plugins adicionales
+
+    // Por ahora usamos high como un buen balance entre calidad y rendimiento
+    // En lugar de max que podría ser problemático en dispositivos de gama baja
+    return ResolutionPreset.high;
+  }
+
+  // Limpiar archivos temporales de escaneo más antiguos que una semana
+  Future<void> _cleanupScanCache() async {
+    // No ejecutar limpieza si ya se hizo en las últimas 24 horas
+    if (DateTime.now().difference(_lastCacheCleanup).inHours < 24) {
+      return;
+    }
+
+    try {
+      final tempDir = await getTemporaryDirectory();
+      final scanDir = Directory('${tempDir.path}/scan_cache');
+
+      if (!await scanDir.exists()) {
+        await scanDir.create(recursive: true);
+        _lastCacheCleanup = DateTime.now();
+        return;
+      }
+
+      // Obtener todos los archivos en el directorio
+      final entities = await scanDir.list().toList();
+      int filesDeleted = 0;
+      int bytesFreed = 0;
+
+      for (var entity in entities) {
+        if (entity is File) {
+          final stat = await entity.stat();
+          // Eliminar archivos más antiguos de 7 días
+          if (DateTime.now().difference(stat.modified).inDays > 7) {
+            bytesFreed += stat.size;
+            await entity.delete();
+            filesDeleted++;
+          }
+        }
+      }
+
+      developer.log(
+          'Limpieza de caché completada: $filesDeleted archivos eliminados, ${(bytesFreed / 1024 / 1024).toStringAsFixed(2)}MB liberados',
+          name: 'scan_tab_content');
+
+      _lastCacheCleanup = DateTime.now();
+    } catch (e) {
+      developer.log('Error al limpiar caché: $e',
+          name: 'scan_tab_content', error: e);
+    }
+  }
+
+  // Guardar imagen en un directorio específico para escaneos
+  Future<String> _saveImageToScanCache(File imageFile) async {
+    try {
+      final tempDir = await getTemporaryDirectory();
+      final scanDir = Directory('${tempDir.path}/scan_cache');
+
+      if (!await scanDir.exists()) {
+        await scanDir.create(recursive: true);
+      }
+
+      final targetPath =
+          '${scanDir.path}/${DateTime.now().millisecondsSinceEpoch}.jpg';
+      final targetFile = await imageFile.copy(targetPath);
+      return targetFile.path;
+    } catch (e) {
+      developer.log('Error al guardar imagen en caché: $e',
+          name: 'scan_tab_content', error: e);
+      return imageFile.path; // Devolver la ruta original si falla
+    }
+  }
+
   Future<void> _initializeCamera() async {
     final status = await Permission.camera.request();
     if (status.isDenied || status.isPermanentlyDenied) {
@@ -76,9 +166,13 @@ class _ScanTabContentState extends State<ScanTabContent>
 
       final CameraDescription camera = _cameras!.first;
 
+      // Usar resolución adaptativa en lugar de siempre la máxima
+      final resolution = await _getOptimalResolutionPreset();
+      developer.log('Usando resolución: $resolution', name: 'scan_tab_content');
+
       _controller = CameraController(
         camera,
-        ResolutionPreset.high,
+        resolution,
         enableAudio: false,
         imageFormatGroup: ImageFormatGroup.jpeg,
       );
@@ -91,6 +185,9 @@ class _ScanTabContentState extends State<ScanTabContent>
           _isCameraInitialized = true;
         });
       }
+
+      // Ejecutar limpieza de caché al iniciar
+      _cleanupScanCache();
     } catch (e) {
       developer.log('Error initializing camera: $e',
           name: 'scan_tab_content', error: e);
@@ -171,8 +268,13 @@ class _ScanTabContentState extends State<ScanTabContent>
         developer.log(
             'Setting _scannedImage from scanner: ${scannedDocuments.first}',
             name: 'scan_tab_content');
+
+        // Copiar la imagen a nuestra carpeta de caché para mejor gestión
+        final savedPath =
+            await _saveImageToScanCache(File(scannedDocuments.first));
+
         setState(() {
-          _scannedImage = File(scannedDocuments!.first);
+          _scannedImage = File(savedPath);
           _isProcessing = false;
         });
 
@@ -228,7 +330,12 @@ class _ScanTabContentState extends State<ScanTabContent>
 
   Future<void> _pickImageFromGallery() async {
     final ImagePicker picker = ImagePicker();
-    final XFile? image = await picker.pickImage(source: ImageSource.gallery);
+    final XFile? image = await picker.pickImage(
+      source: ImageSource.gallery,
+      // Limitar el tamaño máximo de la imagen seleccionada
+      maxWidth: 1200,
+      maxHeight: 1600,
+    );
 
     if (image != null) {
       setState(() {
@@ -236,10 +343,11 @@ class _ScanTabContentState extends State<ScanTabContent>
       });
 
       try {
-        // For gallery images, we'll directly use the selected image
-        // instead of trying to use the document scanner again
+        // Guardar en nuestro directorio de caché
+        final savedPath = await _saveImageToScanCache(File(image.path));
+
         setState(() {
-          _scannedImage = File(image.path);
+          _scannedImage = File(savedPath);
           _isProcessing = false;
         });
 
@@ -282,11 +390,13 @@ class _ScanTabContentState extends State<ScanTabContent>
         name: 'scan_tab_content');
 
     if (rawImage != null) {
-      developer.log(
-          'Setting _scannedImage from camera capture: ${rawImage.path}',
+      // Guardar en nuestro directorio de caché
+      final savedPath = await _saveImageToScanCache(File(rawImage.path));
+
+      developer.log('Setting _scannedImage from camera capture: $savedPath',
           name: 'scan_tab_content');
       setState(() {
-        _scannedImage = File(rawImage.path);
+        _scannedImage = File(savedPath);
         _isProcessing = false;
       });
 
@@ -574,7 +684,7 @@ class _ScanTabContentState extends State<ScanTabContent>
 
                       _controller = CameraController(
                         _cameras![newCameraIndex],
-                        ResolutionPreset.medium,
+                        ResolutionPreset.max,
                         enableAudio: false,
                         imageFormatGroup: ImageFormatGroup.jpeg,
                       );
