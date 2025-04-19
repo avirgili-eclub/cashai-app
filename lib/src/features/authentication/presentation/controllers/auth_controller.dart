@@ -55,6 +55,7 @@ class AuthController extends StateNotifier<AuthState> {
     required String password,
     String? username,
     String? celular,
+    String? codigoIdentificador,
   }) async {
     developer.log('Registering user with email: $email',
         name: 'auth_controller');
@@ -67,6 +68,7 @@ class AuthController extends StateNotifier<AuthState> {
         email: email,
         password: password,
         celular: celular,
+        codigoIdentificador: codigoIdentificador,
       );
 
       final response = await _authRepository.registerUser(userDto);

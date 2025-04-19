@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:country_code_picker/country_code_picker.dart'; // Add this package
 import 'package:starter_architecture_flutter_firebase/src/constants/app_sizes.dart';
 import 'package:starter_architecture_flutter_firebase/src/core/styles/app_styles.dart';
 import 'dart:io' show Platform;
@@ -21,6 +22,13 @@ class _CustomSignInScreenState extends ConsumerState<CustomSignInScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
+  // New controllers for additional fields
+  final _phoneController = TextEditingController();
+  final _usernameController = TextEditingController();
+
+  // Default country code for Paraguay
+  String _selectedCountryCode = '+595';
+  String _selectedCountryDialCode = '595';
 
   bool _isLogin = true;
   bool _isLoading = false;
@@ -32,6 +40,8 @@ class _CustomSignInScreenState extends ConsumerState<CustomSignInScreen> {
     _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
+    _phoneController.dispose();
+    _usernameController.dispose();
     super.dispose();
   }
 
@@ -39,6 +49,14 @@ class _CustomSignInScreenState extends ConsumerState<CustomSignInScreen> {
     setState(() {
       _isLogin = !_isLogin;
     });
+  }
+
+  // Set username from email
+  void _updateUsernameFromEmail(String email) {
+    if (email.contains('@')) {
+      final username = email.split('@')[0];
+      _usernameController.text = username;
+    }
   }
 
   Future<void> _submitForm() async {
@@ -76,11 +94,14 @@ class _CustomSignInScreenState extends ConsumerState<CustomSignInScreen> {
           }
         }
       } else {
-        // Handle registration with our auth controller
+        // Handle registration with our auth controller including new fields
         final response =
             await ref.read(authControllerProvider.notifier).registerUser(
                   email: _emailController.text,
                   password: _passwordController.text,
+                  username: _usernameController.text,
+                  celular: '$_selectedCountryDialCode${_phoneController.text}',
+                  codigoIdentificador: _selectedCountryCode,
                 );
 
         if (context.mounted) {
@@ -91,6 +112,7 @@ class _CustomSignInScreenState extends ConsumerState<CustomSignInScreen> {
               // Don't clear email so user can proceed to login
               _passwordController.clear();
               _confirmPasswordController.clear();
+              _phoneController.clear();
             });
 
             ScaffoldMessenger.of(context).showSnackBar(
@@ -263,7 +285,7 @@ class _CustomSignInScreenState extends ConsumerState<CustomSignInScreen> {
                   Text(
                     _isLogin
                         ? 'Bienvenido de vuelta a CashAI'
-                        : 'Únete a CashAI y comienza a ahorrar',
+                        : 'Únete a CashAI y comienza a controlar tus finanzas',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 16,
@@ -303,6 +325,12 @@ class _CustomSignInScreenState extends ConsumerState<CustomSignInScreen> {
                               ),
                             ),
                           ),
+                          onChanged: (value) {
+                            // Update username when email changes
+                            if (!_isLogin) {
+                              _updateUsernameFromEmail(value);
+                            }
+                          },
                           validator: (value) {
                             if (value == null || value.isEmpty) {
                               return 'Por favor ingresa tu correo electrónico';
@@ -313,6 +341,111 @@ class _CustomSignInScreenState extends ConsumerState<CustomSignInScreen> {
                             return null;
                           },
                         ),
+
+                        const SizedBox(height: 16),
+
+                        // Username field (only for registration)
+                        if (!_isLogin) ...[
+                          TextFormField(
+                            controller: _usernameController,
+                            decoration: InputDecoration(
+                              labelText: 'Nombre de usuario',
+                              prefixIcon: const Icon(Icons.person_outline),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(10),
+                                borderSide: BorderSide(
+                                  color: Colors.grey[300]!,
+                                ),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(10),
+                                borderSide: BorderSide(
+                                  color: AppStyles.primaryColor,
+                                  width: 2,
+                                ),
+                              ),
+                            ),
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Por favor ingresa un nombre de usuario';
+                              }
+                              return null;
+                            },
+                          ),
+
+                          const SizedBox(height: 16),
+
+                          // Phone number field with country code picker
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // Country code picker
+                              Container(
+                                decoration: BoxDecoration(
+                                  border: Border.all(color: Colors.grey[300]!),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: CountryCodePicker(
+                                  onChanged: (CountryCode countryCode) {
+                                    setState(() {
+                                      _selectedCountryCode =
+                                          countryCode.name ?? '+595';
+                                      _selectedCountryDialCode =
+                                          countryCode.dialCode ?? '595';
+                                    });
+                                  },
+                                  initialSelection: 'PY',
+                                  favorite: const ['PY', 'AR', 'BR'],
+                                  showCountryOnly: false,
+                                  showOnlyCountryWhenClosed: false,
+                                  alignLeft: false,
+                                  padding: EdgeInsets.zero,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              // Phone number input
+                              Expanded(
+                                child: TextFormField(
+                                  controller: _phoneController,
+                                  keyboardType: TextInputType.phone,
+                                  decoration: InputDecoration(
+                                    labelText: 'Número de celular',
+                                    hintText: '9XXXXXXXX',
+                                    prefixIcon: const Icon(Icons.phone_android),
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                    enabledBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(10),
+                                      borderSide: BorderSide(
+                                        color: Colors.grey[300]!,
+                                      ),
+                                    ),
+                                    focusedBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(10),
+                                      borderSide: BorderSide(
+                                        color: AppStyles.primaryColor,
+                                        width: 2,
+                                      ),
+                                    ),
+                                  ),
+                                  validator: (value) {
+                                    if (value == null || value.isEmpty) {
+                                      return 'Por favor ingresa tu número de celular';
+                                    }
+                                    if (value.length < 9) {
+                                      return 'Número de celular inválido';
+                                    }
+                                    return null;
+                                  },
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
 
                         const SizedBox(height: 16),
 
