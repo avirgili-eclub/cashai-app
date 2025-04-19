@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:starter_architecture_flutter_firebase/src/constants/app_sizes.dart';
 import 'package:starter_architecture_flutter_firebase/src/core/styles/app_styles.dart';
 import 'dart:io' show Platform;
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_ui_oauth_google/firebase_ui_oauth_google.dart';
 import 'package:firebase_ui_oauth_apple/firebase_ui_oauth_apple.dart';
+import '../presentation/controllers/auth_controller.dart';
 
 class CustomSignInScreen extends ConsumerStatefulWidget {
   const CustomSignInScreen({super.key});
@@ -49,23 +51,71 @@ class _CustomSignInScreenState extends ConsumerState<CustomSignInScreen> {
     });
 
     try {
-      // Here you'll implement the actual authentication logic
-      // For now just simulate a delay
-      await Future.delayed(const Duration(seconds: 1));
+      if (_isLogin) {
+        // Handle login with our auth controller
+        final response = await ref.read(authControllerProvider.notifier).login(
+              email: _emailController.text,
+              password: _passwordController.text,
+            );
 
-      if (context.mounted) {
-        // Navigate to dashboard or show success message
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-              content: Text(
-                  _isLogin ? 'Inicio de sesión exitoso' : 'Registro exitoso')),
-        );
+        if (context.mounted) {
+          if (response != null) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Inicio de sesión exitoso')),
+            );
+            // Navigate to dashboard using go_router's context extension
+            context.go('/dashboard');
+          } else {
+            final error = ref.read(authControllerProvider).error;
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(error ?? 'Error al iniciar sesión'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+        }
+      } else {
+        // Handle registration with our auth controller
+        final response =
+            await ref.read(authControllerProvider.notifier).registerUser(
+                  email: _emailController.text,
+                  password: _passwordController.text,
+                );
+
+        if (context.mounted) {
+          if (response != null) {
+            // Registration successful - switch to login mode
+            setState(() {
+              _isLogin = true;
+              // Don't clear email so user can proceed to login
+              _passwordController.clear();
+              _confirmPasswordController.clear();
+            });
+
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Registro exitoso. Por favor inicia sesión'),
+                backgroundColor: Colors.green,
+              ),
+            );
+          } else {
+            // Registration failed
+            final error = ref.read(authControllerProvider).error;
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(error ?? 'Error en el registro'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+        }
       }
     } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Ha ocurrido un error. Inténtalo de nuevo.'),
+          SnackBar(
+            content: Text('Ha ocurrido un error: ${e.toString()}'),
             backgroundColor: Colors.red,
           ),
         );
@@ -467,7 +517,7 @@ class _CustomSignInScreenState extends ConsumerState<CustomSignInScreen> {
                             : 'Registrarse con Google',
                         icon: const Icon(
                           Icons
-                              .g_mobiledata, // Replace with Icon instead of Image
+                              .g_mobiledata, // Using icon instead of Image to avoid asset issues
                           color: Colors.blue,
                           size: 24.0,
                         ),
@@ -539,7 +589,6 @@ class _SocialSignInButton extends StatelessWidget {
             side: BorderSide(color: borderColor),
           ),
         ),
-        // Fix overflow by using Row instead of ElevatedButton.icon
         child: Row(
           mainAxisSize: MainAxisSize.min, // Make the row take minimum space
           mainAxisAlignment: MainAxisAlignment.center, // Center the content
