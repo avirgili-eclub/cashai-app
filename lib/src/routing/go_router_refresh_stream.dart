@@ -2,8 +2,13 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 
-/// This class was imported from the migration guide for GoRouter 5.0
+/// A [Listenable] implementation that can be used with Go Router's
+/// [GoRouter.refreshListenable] parameter.
 class GoRouterRefreshStream extends ChangeNotifier {
+  /// Creates a [GoRouterRefreshStream].
+  ///
+  /// Every time the provided [stream] emits an event, this will notify its
+  /// listeners.
   GoRouterRefreshStream(Stream<dynamic> stream) {
     notifyListeners();
     _subscription = stream.asBroadcastStream().listen(

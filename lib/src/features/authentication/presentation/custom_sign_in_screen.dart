@@ -8,6 +8,9 @@ import 'dart:io' show Platform;
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_ui_oauth_google/firebase_ui_oauth_google.dart';
 import 'package:firebase_ui_oauth_apple/firebase_ui_oauth_apple.dart';
+import 'dart:developer' as developer;
+import '../../../core/auth/providers/user_session_provider.dart';
+import '../../../routing/app_router.dart';
 import '../presentation/controllers/auth_controller.dart';
 
 class CustomSignInScreen extends ConsumerStatefulWidget {
@@ -71,6 +74,9 @@ class _CustomSignInScreenState extends ConsumerState<CustomSignInScreen> {
     try {
       if (_isLogin) {
         // Handle login with our auth controller
+        developer.log('Attempting login with email: ${_emailController.text}',
+            name: 'custom_sign_in_screen');
+
         final response = await ref.read(authControllerProvider.notifier).login(
               email: _emailController.text,
               password: _passwordController.text,
@@ -78,11 +84,48 @@ class _CustomSignInScreenState extends ConsumerState<CustomSignInScreen> {
 
         if (context.mounted) {
           if (response != null) {
+            // Log the successful login details for debugging
+            developer.log(
+                'Login successful, token received: ${response.containsKey('token')}',
+                name: 'custom_sign_in_screen');
+
+            // Check if userId and token were properly set in the session
+            final session = ref.read(userSessionNotifierProvider);
+            developer.log(
+                'UserSession after login - userId: ${session.userId}, hasToken: ${session.token != null}',
+                name: 'custom_sign_in_screen');
+
+            // Show success message
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Inicio de sesión exitoso')),
+              const SnackBar(
+                content: Text('Inicio de sesión exitoso'),
+                backgroundColor: Colors.green,
+                duration: Duration(seconds: 1),
+              ),
             );
-            // Navigate to dashboard using go_router's context extension
-            context.go('/dashboard');
+
+            if (context.mounted) {
+              developer.log('Navigating to dashboard after successful login',
+                  name: 'custom_sign_in_screen');
+
+              // Force the router to refresh its state
+              ref.invalidate(goRouterProvider);
+
+              // Use a small delay to allow the router state to update
+              Future.delayed(const Duration(milliseconds: 500), () {
+                if (context.mounted) {
+                  // Try to navigate directly to dashboard
+                  try {
+                    context.go('/dashboard');
+                    developer.log('Navigation to dashboard initiated',
+                        name: 'custom_sign_in_screen');
+                  } catch (e) {
+                    developer.log('Navigation error: $e',
+                        name: 'custom_sign_in_screen', error: e);
+                  }
+                }
+              });
+            }
           } else {
             final error = ref.read(authControllerProvider).error;
             ScaffoldMessenger.of(context).showSnackBar(

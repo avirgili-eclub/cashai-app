@@ -10,18 +10,19 @@ import 'package:go_router/go_router.dart';
 import 'package:starter_architecture_flutter_firebase/src/features/onboarding/data/onboarding_repository.dart';
 import 'package:starter_architecture_flutter_firebase/src/features/onboarding/presentation/onboarding_screen.dart';
 import 'package:starter_architecture_flutter_firebase/src/routing/go_router_refresh_stream.dart';
+import 'package:starter_architecture_flutter_firebase/src/routing/jwt_router_refresh_listenable.dart';
 import 'package:starter_architecture_flutter_firebase/src/routing/not_found_screen.dart';
 import 'package:starter_architecture_flutter_firebase/src/routing/scaffold_with_nested_navigation.dart';
 // Finance app imports
 import 'package:starter_architecture_flutter_firebase/src/features/dashboard/presentation/screens/dashboard_screen.dart';
 import '../features/categories/presentation/screens/categories_screen.dart';
 import '../features/categories/presentation/screens/category_transactions_screen.dart';
-import '../features/dashboard/domain/entities/category.dart';
 import '../features/dashboard/domain/entities/recent_transaction.dart';
 import '../features/dashboard/domain/entities/top_category.dart';
 import '../features/dashboard/presentation/screens/transaction_details_screen.dart';
 import '../features/dashboard/presentation/screens/all_transactions_screen.dart';
 import '../features/transactions/presentation/screens/add_transaction_screen.dart';
+import '../core/auth/providers/user_session_provider.dart';
 
 part 'app_router.g.dart';
 
@@ -48,11 +49,40 @@ enum AppRoute {
   incomes,
 }
 
+// Extension to combine multiple refresh sources
+extension GoRouterRefreshListenableExtension on Listenable {
+  Listenable combineListenable(Listenable other) {
+    return CombinedListenable([this, other]);
+  }
+}
+
+// Combined listenable class
+class CombinedListenable extends ChangeNotifier {
+  CombinedListenable(this.listenables) {
+    for (var listenable in listenables) {
+      listenable.addListener(notifyListeners);
+    }
+  }
+
+  final List<Listenable> listenables;
+
+  @override
+  void dispose() {
+    for (var listenable in listenables) {
+      listenable.removeListener(notifyListeners);
+    }
+    super.dispose();
+  }
+}
+
 @riverpod
 GoRouter goRouter(Ref ref) {
   final authRepository = ref.watch(authRepositoryProvider);
+  final userSession = ref.watch(userSessionNotifierProvider);
+  final jwtRefreshListenable = ref.watch(jwtAuthRefreshListenableProvider);
+
   return GoRouter(
-    initialLocation: '/signIn', // Change initial location to sign-in screen
+    initialLocation: '/signIn',
     navigatorKey: _rootNavigatorKey,
     debugLogDiagnostics: true,
     redirect: (context, state) {
@@ -68,13 +98,22 @@ GoRouter goRouter(Ref ref) {
         return null;
       }
 
-      final isLoggedIn = authRepository.currentUser != null;
+      // Check both Firebase auth and JWT token authentication
+      final isFirebaseLoggedIn = authRepository.currentUser != null;
+      final hasJwtToken =
+          userSession.token != null && userSession.token!.isNotEmpty;
+      final isLoggedIn = isFirebaseLoggedIn || hasJwtToken;
+
+      // Log auth state for debugging
+      debugPrint(
+          'Firebase auth: $isFirebaseLoggedIn, JWT auth: $hasJwtToken, path: $path');
+
       if (isLoggedIn) {
         if (path.startsWith('/onboarding') || path.startsWith('/signIn')) {
           return '/dashboard'; // Redirect to dashboard when logged in
         }
       } else {
-        // Remove job and entries paths from protected routes
+        // Protected routes require authentication
         if (path.startsWith('/onboarding') ||
             path.startsWith('/account') ||
             path.startsWith('/expenses') ||
@@ -85,7 +124,9 @@ GoRouter goRouter(Ref ref) {
       }
       return null;
     },
-    refreshListenable: GoRouterRefreshStream(authRepository.authStateChanges()),
+    // Use a ListenableList to combine multiple refresh sources
+    refreshListenable: GoRouterRefreshStream(authRepository.authStateChanges())
+        .combineListenable(jwtRefreshListenable),
     routes: [
       // Finance app routes
       GoRoute(

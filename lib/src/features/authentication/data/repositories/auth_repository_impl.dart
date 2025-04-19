@@ -15,11 +15,13 @@ class AuthRepositoryImpl implements AuthRepository {
   AuthRepositoryImpl({
     required http.Client httpClient,
     required this.baseUrl,
+    required this.authBaseUrl,
     required this.firebaseAuth,
   }) : _httpClient = httpClient;
 
   final http.Client _httpClient;
-  final String baseUrl;
+  final String baseUrl; // For user registration - /api/v1/users
+  final String authBaseUrl; // For login - /api/v1/auth
   final FirebaseAuth firebaseAuth;
 
   // Firebase Auth methods
@@ -103,8 +105,10 @@ class AuthRepositoryImpl implements AuthRepository {
   @override
   Future<Map<String, dynamic>> login(String email, String password) async {
     try {
-      final loginUrl =
-          '$baseUrl/login'; // This path may need to be adjusted based on your backend
+      // Use authBaseUrl for login with a fallback to baseUrl if null
+      final effectiveBaseUrl = authBaseUrl;
+      final loginUrl = '$effectiveBaseUrl/login';
+
       developer.log('Making login request to: $loginUrl',
           name: 'auth_repository');
 
@@ -122,10 +126,31 @@ class AuthRepositoryImpl implements AuthRepository {
 
       developer.log('Login response status code: ${response.statusCode}',
           name: 'auth_repository');
-      final responseBody = jsonDecode(response.body);
+
+      // Handle empty response body
+      if (response.body.trim().isEmpty) {
+        developer.log('Empty login response body received',
+            name: 'auth_repository');
+        throw AuthError(
+            'El servidor devolvió una respuesta vacía (código ${response.statusCode}).',
+            statusCode: response.statusCode);
+      }
+
+      // Try to parse response as JSON
+      Map<String, dynamic> responseBody;
+      try {
+        responseBody = jsonDecode(response.body);
+      } catch (e) {
+        developer.log('Failed to parse login JSON: ${response.body}',
+            name: 'auth_repository', error: e);
+        throw AuthError(
+            'Error al procesar la respuesta del servidor: ${e.toString()}');
+      }
 
       if (response.statusCode == 200) {
-        developer.log('Login successful', name: 'auth_repository');
+        developer.log(
+            'Login successful, token received: ${responseBody.containsKey('token')}',
+            name: 'auth_repository');
         return responseBody;
       } else {
         String errorMessage = responseBody is String
@@ -154,9 +179,10 @@ class AuthRepositoryImpl implements AuthRepository {
       // Get ID token from Firebase
       final idToken = await googleUser.getIdToken();
 
-      // Send to backend for verification - updating path
-      final loginUrl =
-          '$baseUrl/auth/google'; // Changed from '/auth/google' to '/auth-google'
+      // Send to backend for verification - use authBaseUrl with fallback
+      final effectiveBaseUrl = authBaseUrl;
+      final loginUrl = '$effectiveBaseUrl/auth/google';
+
       developer.log('Verifying Google login with backend at: $loginUrl',
           name: 'auth_repository');
 
@@ -178,7 +204,26 @@ class AuthRepositoryImpl implements AuthRepository {
       developer.log(
           'Google verification response status: ${response.statusCode}',
           name: 'auth_repository');
-      final responseBody = jsonDecode(response.body);
+
+      // Handle empty response body
+      if (response.body.trim().isEmpty) {
+        developer.log('Empty Google auth response body received',
+            name: 'auth_repository');
+        throw AuthError(
+            'El servidor devolvió una respuesta vacía (código ${response.statusCode}).',
+            statusCode: response.statusCode);
+      }
+
+      // Try to parse response as JSON
+      Map<String, dynamic> responseBody;
+      try {
+        responseBody = jsonDecode(response.body);
+      } catch (e) {
+        developer.log('Failed to parse Google auth JSON: ${response.body}',
+            name: 'auth_repository', error: e);
+        throw AuthError(
+            'Error al procesar la respuesta del servidor: ${e.toString()}');
+      }
 
       if (response.statusCode == 200) {
         developer.log('Google login verification successful',
@@ -212,9 +257,10 @@ class AuthRepositoryImpl implements AuthRepository {
       // Get ID token from Firebase
       final idToken = await appleUser.getIdToken();
 
-      // Send to backend for verification - updating path
-      final loginUrl =
-          '$baseUrl/auth/apple'; // Changed from '/auth/apple' to '/auth-apple'
+      // Send to backend for verification - use authBaseUrl with fallback
+      final effectiveBaseUrl = authBaseUrl;
+      final loginUrl = '$effectiveBaseUrl/auth/apple';
+
       developer.log('Verifying Apple login with backend at: $loginUrl',
           name: 'auth_repository');
 
@@ -235,7 +281,26 @@ class AuthRepositoryImpl implements AuthRepository {
       developer.log(
           'Apple verification response status: ${response.statusCode}',
           name: 'auth_repository');
-      final responseBody = jsonDecode(response.body);
+
+      // Handle empty response body
+      if (response.body.trim().isEmpty) {
+        developer.log('Empty Apple auth response body received',
+            name: 'auth_repository');
+        throw AuthError(
+            'El servidor devolvió una respuesta vacía (código ${response.statusCode}).',
+            statusCode: response.statusCode);
+      }
+
+      // Try to parse response as JSON
+      Map<String, dynamic> responseBody;
+      try {
+        responseBody = jsonDecode(response.body);
+      } catch (e) {
+        developer.log('Failed to parse Apple auth JSON: ${response.body}',
+            name: 'auth_repository', error: e);
+        throw AuthError(
+            'Error al procesar la respuesta del servidor: ${e.toString()}');
+      }
 
       if (response.statusCode == 200) {
         developer.log('Apple login verification successful',
@@ -290,14 +355,18 @@ final authRepositoryProvider = Provider<AuthRepository>((ref) {
     host = 'http://localhost:8080';
   }
 
-  final baseUrl =
-      '$host/api/v1/users'; // Changed from '/api/v1/auth' to '/api/users'
-  developer.log('Using Auth API base URL: $baseUrl',
+  final usersBaseUrl = '$host/api/v1/users'; // For registration
+  final authBaseUrl = '$host/api/v1/auth'; // For login
+
+  developer.log('Using Registration API base URL: $usersBaseUrl',
+      name: 'auth_repository_provider');
+  developer.log('Using Auth API base URL: $authBaseUrl',
       name: 'auth_repository_provider');
 
   return AuthRepositoryImpl(
     httpClient: http.Client(),
-    baseUrl: baseUrl,
+    baseUrl: usersBaseUrl,
+    authBaseUrl: authBaseUrl,
     firebaseAuth: ref.watch(firebaseAuthProvider),
   );
 });

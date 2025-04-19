@@ -100,11 +100,31 @@ class AuthController extends StateNotifier<AuthState> {
       state = state.copyWith(isLoading: true, error: null);
 
       final response = await _authRepository.login(email, password);
-      developer.log('Login successful', name: 'auth_controller');
+      developer.log(
+          'Login successful with response keys: ${response.keys.join(", ")}',
+          name: 'auth_controller');
 
-      // Update user session with the received user ID
-      if (response.containsKey('id')) {
-        _userSession.setUserId(response['id'].toString());
+      // Update user session with the received data
+      if (response.containsKey('userId')) {
+        final userId = response['userId'].toString();
+        final token = response['token']?.toString();
+        final username = response['username']?.toString();
+        final userEmail = response['email']?.toString();
+
+        developer.log(
+            'Setting user session with userId: $userId, token: ${token != null}',
+            name: 'auth_controller');
+
+        _userSession.setUserSession(
+          userId: userId,
+          token: token,
+          username: username,
+          email: userEmail,
+        );
+      } else {
+        developer.log(
+            'Warning: Response does not contain userId key: $response',
+            name: 'auth_controller');
       }
 
       state = state.copyWith(

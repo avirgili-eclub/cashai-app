@@ -18,9 +18,10 @@ class DashboardScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     developer.log('Building DashboardScreen', name: 'dashboard_screen');
 
-    // Get the current user ID
+    // Get the current user session
     final userSession = ref.watch(userSessionNotifierProvider);
-    developer.log('Current userId: ${userSession.userId}',
+    developer.log(
+        'Current userId in dashboard: ${userSession.userId}, username: ${userSession.username}',
         name: 'dashboard_screen');
 
     return Scaffold(
@@ -46,15 +47,33 @@ class DashboardScreen extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Display current user ID for debugging
+              // Display current user info for debugging
               Padding(
                 padding: const EdgeInsets.all(8.0),
-                child: Text(
-                  'Current User ID: ${userSession.userId}',
-                  style: Theme.of(context).textTheme.bodySmall,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Usuario: ${userSession.username ?? "N/A"}',
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                    Text(
+                      'Email: ${userSession.email ?? "N/A"}',
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                    Text(
+                      'ID: ${userSession.userId}',
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                    Text(
+                      'Autorizado: ${userSession.token != null ? "Sí" : "No"}',
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ],
                 ),
               ),
-              const AppHeader(userName: 'Ale V.'),
+              // Use username from session if available, otherwise fallback to "Ale V."
+              AppHeader(userName: userSession.username ?? 'Ale V.'),
               _buildBalanceCardWithErrorHandler(ref),
               const SizedBox(height: 16),
               // New collapsible card that contains both QuickAction and Categories sections
