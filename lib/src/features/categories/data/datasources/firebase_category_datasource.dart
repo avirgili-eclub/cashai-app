@@ -1,0 +1,78 @@
+import 'dart:convert';
+import 'dart:developer' as developer;
+import 'dart:io' show Platform;
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:http/http.dart' as http;
+import 'package:riverpod_annotation/riverpod_annotation.dart';
+
+import '../../domain/models/custom_category_request.dart';
+
+part 'firebase_category_datasource.g.dart';
+
+class FirebaseCategoryDataSource {
+  final String baseUrl;
+  final http.Client client;
+
+  FirebaseCategoryDataSource({
+    required this.baseUrl,
+    http.Client? client,
+  }) : client = client ?? http.Client();
+
+  Future<Map<String, dynamic>> createCustomCategory(
+      CustomCategoryRequest request, String userId) async {
+    final url = '$baseUrl/create?userId=$userId';
+    developer.log('Making API request to create category: $url',
+        name: 'category_datasource');
+
+    try {
+      final response = await client.post(
+        Uri.parse(url),
+        headers: {
+          'Content-Type': 'application/json; charset=utf-8',
+          'Accept': 'application/json; charset=utf-8',
+        },
+        body: jsonEncode(request.toJson()),
+      );
+
+      developer.log('Response status code: ${response.statusCode}',
+          name: 'category_datasource');
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        developer.log('Response body: ${response.body}',
+            name: 'category_datasource');
+        return jsonDecode(response.body);
+      } else {
+        developer.log('Error response: ${response.body}',
+            name: 'category_datasource');
+        throw Exception(
+            'Failed to create category: ${response.statusCode} - ${response.body}');
+      }
+    } catch (e, stack) {
+      developer.log('Network error: $e',
+          name: 'category_datasource', error: e, stackTrace: stack);
+      throw Exception('Failed to connect to the server: $e');
+    }
+  }
+}
+
+@riverpod
+FirebaseCategoryDataSource categoryDataSource(CategoryDataSourceRef ref) {
+  // Choose the correct host based on platform
+  String host;
+
+  if (kIsWeb) {
+    // Web uses the current origin
+    host = 'http://localhost:8080';
+  } else if (Platform.isAndroid) {
+    // Android emulator needs special IP for host's localhost
+    host = 'http://10.0.2.2:8080';
+  } else {
+    // iOS simulator and desktop can use localhost
+    host = 'http://localhost:8080';
+  }
+
+  final baseUrl = '$host/api/v1/custom_category';
+  developer.log('Using API base URL: $baseUrl', name: 'category_datasource');
+
+  return FirebaseCategoryDataSource(baseUrl: baseUrl);
+}

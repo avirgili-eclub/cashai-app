@@ -61,7 +61,7 @@ class CategoriesScreen extends ConsumerWidget {
                     size: 24, // Increased icon size from 20 to 24
                   ),
                 ),
-                onPressed: () => _showAddCategoryModal(context),
+                onPressed: () => _showAddCategoryModal(context, ref),
                 tooltip: 'Añadir categoría',
               ),
               const SizedBox(width: 16), // Increased right spacing
@@ -142,12 +142,17 @@ class CategoriesScreen extends ConsumerWidget {
     );
   }
 
-  void _showAddCategoryModal(BuildContext context) {
-    showModalBottomSheet(
+  void _showAddCategoryModal(BuildContext context, WidgetRef ref) async {
+    final result = await showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => const AddCategoryModal(),
     );
+
+    // If a category was added successfully, refresh the list
+    if (result == true) {
+      ref.invalidate(categoriesWithLimitProvider(limit: 0));
+    }
   }
 }
