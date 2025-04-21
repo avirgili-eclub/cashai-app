@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:http/http.dart' as http;
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../../../core/auth/providers/user_session_provider.dart';
 import '../../domain/models/custom_category_request.dart';
 
 part 'firebase_category_datasource.g.dart';
@@ -12,10 +13,12 @@ part 'firebase_category_datasource.g.dart';
 class FirebaseCategoryDataSource {
   final String baseUrl;
   final http.Client client;
+  final UserSessionNotifier? userSession;
 
   FirebaseCategoryDataSource({
     required this.baseUrl,
     http.Client? client,
+    this.userSession,
   }) : client = client ?? http.Client();
 
   Future<Map<String, dynamic>> createCustomCategory(
@@ -25,12 +28,25 @@ class FirebaseCategoryDataSource {
         name: 'category_datasource');
 
     try {
+      // Get auth headers from user session if available
+      final headers = {
+        'Content-Type': 'application/json; charset=utf-8',
+        'Accept': 'application/json; charset=utf-8',
+      };
+
+      // Add authentication token if available
+      if (userSession != null && userSession!.state.token != null) {
+        headers['Authorization'] = 'Bearer ${userSession!.state.token}';
+        developer.log('Adding authorization header with token',
+            name: 'category_datasource');
+      } else {
+        developer.log('No authentication token available',
+            name: 'category_datasource');
+      }
+
       final response = await client.post(
         Uri.parse(url),
-        headers: {
-          'Content-Type': 'application/json; charset=utf-8',
-          'Accept': 'application/json; charset=utf-8',
-        },
+        headers: headers,
         body: jsonEncode(request.toJson()),
       );
 
@@ -74,5 +90,11 @@ FirebaseCategoryDataSource categoryDataSource(CategoryDataSourceRef ref) {
   final baseUrl = '$host/api/v1/custom_category';
   developer.log('Using API base URL: $baseUrl', name: 'category_datasource');
 
-  return FirebaseCategoryDataSource(baseUrl: baseUrl);
+  // Get the userSessionNotifier to access the authentication token
+  final userSessionNotifier = ref.read(userSessionNotifierProvider.notifier);
+
+  return FirebaseCategoryDataSource(
+    baseUrl: baseUrl,
+    userSession: userSessionNotifier,
+  );
 }
