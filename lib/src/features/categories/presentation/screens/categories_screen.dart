@@ -1,25 +1,46 @@
 import 'dart:developer' as developer;
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/styles/app_styles.dart';
+import '../../../../core/auth/providers/user_session_provider.dart';
 import '../../../dashboard/domain/entities/top_category.dart';
 import '../../../dashboard/presentation/controllers/categories_controller.dart';
+import '../../data/datasources/firebase_category_datasource.dart';
 import '../widgets/category_list_item.dart';
 import '../widgets/add_category_modal.dart';
 
-class CategoriesScreen extends ConsumerWidget {
+class CategoriesScreen extends ConsumerStatefulWidget {
   const CategoriesScreen({Key? key}) : super(key: key);
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<CategoriesScreen> createState() => _CategoriesScreenState();
+}
+
+class _CategoriesScreenState extends ConsumerState<CategoriesScreen> {
+  // Simplified state - no need to track dismissed items here
+  List<TopCategory>? _categories;
+  bool _isLoading = false;
+  String? _error;
+  Timer? _refreshDebounce; // Add timer for debouncing
+
+  @override
+  Widget build(BuildContext context) {
     developer.log('Building CategoriesScreen', name: 'categories_screen');
 
-    // Use the new categoriesWithLimit provider instead
     final categoriesAsync = ref.watch(categoriesWithLimitProvider(limit: 0));
 
+    if (_categories == null && !_isLoading && categoriesAsync is AsyncData) {
+      // Add null safety with conditional cast and null check
+      final asyncData = categoriesAsync.value;
+      if (asyncData != null) {
+        _categories = List<TopCategory>.from(asyncData.cast<TopCategory>());
+      }
+    }
+
     return PopScope(
-      canPop: false, // Handle back navigation manually
+      canPop: false,
       onPopInvoked: (didPop) {
         if (!didPop) {
           _navigateBack(context);
@@ -67,10 +88,117 @@ class CategoriesScreen extends ConsumerWidget {
               const SizedBox(width: 16), // Increased right spacing
             ],
           ),
-          body: _buildCategoriesContent(context, categoriesAsync),
+          body: _buildBody(categoriesAsync),
         ),
       ),
     );
+  }
+
+  Widget _buildBody(AsyncValue<List<dynamic>> categoriesAsync) {
+    if (_categories != null) {
+      return _buildCategoriesFromLocalState();
+    }
+
+    return categoriesAsync.when(
+      data: (categories) {
+        // Add null check before casting
+        if (categories != null) {
+          return _buildCategoriesContent(categories.cast<TopCategory>());
+        } else {
+          // Handle null case
+          return const Center(child: Text('No hay categorías disponibles'));
+        }
+      },
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (error, stack) {
+        developer.log('Error loading categories: $error',
+            name: 'categories_screen', error: error, stackTrace: stack);
+        return Center(
+          child: Text('Error cargando categorías: ${error.toString()}'),
+        );
+      },
+    );
+  }
+
+  Widget _buildCategoriesFromLocalState() {
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (_error != null) {
+      return Center(child: Text('Error: $_error'));
+    }
+
+    if (_categories!.isEmpty) {
+      return const Center(child: Text('No hay categorías para mostrar'));
+    }
+
+    return _buildCategoriesContent(_categories!);
+  }
+
+  // Simplified list builder
+  Widget _buildCategoriesContent(List<TopCategory> categoryList) {
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: ListView.builder(
+        itemCount: categoryList.length,
+        itemBuilder: (context, index) {
+          final category = categoryList[index];
+
+          // Use the new dedicated widget for each item
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 16.0),
+            child: DismissibleCategoryItem(
+              category: category,
+              onDeleted: _refreshCategoriesList,
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  // Method to refresh categories from the API
+  Future<void> _refreshCategoriesList() async {
+    _refreshDebounce?.cancel();
+
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+// Set up new refresh with delay to prevent multiple rapid refreshes
+    _refreshDebounce = Timer(const Duration(milliseconds: 300), () async {
+      try {
+        ref.invalidate(categoriesWithLimitProvider(limit: 0));
+        // Wait for data to be available
+        final data =
+            await ref.read(categoriesWithLimitProvider(limit: 0).future);
+
+        if (mounted) {
+          setState(() {
+            _categories = List<TopCategory>.from(data.cast<TopCategory>());
+            _isLoading = false;
+          });
+        }
+      } catch (e) {
+        if (mounted) {
+          setState(() {
+            _error = e.toString();
+            _isLoading = false;
+          });
+
+          developer.log('Error refreshing categories: $e',
+              name: 'categories_screen', error: e);
+        }
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    // Clean up timer when widget is disposed
+    _refreshDebounce?.cancel();
+    super.dispose();
   }
 
   // Safe navigation back method
@@ -91,54 +219,33 @@ class CategoriesScreen extends ConsumerWidget {
     }
   }
 
-  Widget _buildCategoriesContent(
-      BuildContext context, AsyncValue<List<dynamic>> categoriesAsync) {
-    return categoriesAsync.when(
-      data: (categories) {
-        if (categories.isEmpty) {
-          return const Center(
-            child: Text('No hay categorías para mostrar'),
-          );
-        }
+  // Show success message using SnackBar
+  void _showSuccessMessage(BuildContext context, String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.green,
+        behavior: SnackBarBehavior.floating,
+        margin: const EdgeInsets.all(16),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+        ),
+      ),
+    );
+  }
 
-        // Use TopCategory objects directly
-        final categoryList = categories.cast<TopCategory>();
-
-        return Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: ListView.builder(
-            itemCount: categoryList.length,
-            itemBuilder: (context, index) {
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 16.0),
-                child: CategoryListItem(
-                  topCategory: categoryList[index], // Pass TopCategory directly
-                  onTap: () {
-                    // Navigate to category transactions
-                    final category = categoryList[index];
-                    developer.log(
-                        'Navigating to category transactions: ${category.name}',
-                        name: 'categories_screen');
-                    context.pushNamed(
-                      'categoryTransactions',
-                      pathParameters: {'id': category.id.toString()},
-                      extra: category, // Pass TopCategory as extra
-                    );
-                  },
-                ),
-              );
-            },
-          ),
-        );
-      },
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (error, stack) {
-        developer.log('Error loading categories: $error',
-            name: 'categories_screen', error: error, stackTrace: stack);
-        return Center(
-          child: Text('Error cargando categorías: ${error.toString()}'),
-        );
-      },
+  // Show error message using SnackBar
+  void _showErrorMessage(BuildContext context, String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red,
+        behavior: SnackBarBehavior.floating,
+        margin: const EdgeInsets.all(16),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+        ),
+      ),
     );
   }
 
@@ -150,9 +257,247 @@ class CategoriesScreen extends ConsumerWidget {
       builder: (context) => const AddCategoryModal(),
     );
 
-    // If a category was added successfully, refresh the list
     if (result == true) {
-      ref.invalidate(categoriesWithLimitProvider(limit: 0));
+      _refreshCategoriesList();
     }
+  }
+}
+
+// New dedicated widget that handles its own dismissal state
+class DismissibleCategoryItem extends StatefulWidget {
+  final TopCategory category;
+  final VoidCallback onDeleted;
+
+  const DismissibleCategoryItem({
+    Key? key,
+    required this.category,
+    required this.onDeleted,
+  }) : super(key: key);
+
+  @override
+  State<DismissibleCategoryItem> createState() =>
+      _DismissibleCategoryItemState();
+}
+
+class _DismissibleCategoryItemState extends State<DismissibleCategoryItem> {
+  // Local state to track if this item has been dismissed
+  bool _isDismissed = false;
+  bool _isDeleting = false;
+
+  @override
+  Widget build(BuildContext context) {
+    // If already dismissed, don't show anything
+    if (_isDismissed) {
+      return const SizedBox.shrink();
+    }
+
+    return Dismissible(
+      key: ValueKey(
+          'category-${widget.category.id}-${identityHashCode(widget)}'),
+      direction: DismissDirection.endToStart,
+      confirmDismiss: (direction) async {
+        if (_isDeleting) return false;
+
+        // Show confirmation dialog
+        return await showDialog<bool>(
+          context: context,
+          builder: (BuildContext context) {
+            return AlertDialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              title: const Text('Eliminar categoría'),
+              content: RichText(
+                text: TextSpan(
+                  style: const TextStyle(
+                    fontSize: 16,
+                    color: Colors.black87,
+                  ),
+                  children: [
+                    const TextSpan(
+                      text: '¿Estás seguro que deseas eliminar la categoría ',
+                    ),
+                    TextSpan(
+                      text: widget.category.name,
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    const TextSpan(
+                      text: '?\n\n',
+                    ),
+                    TextSpan(
+                      text:
+                          'Esta acción eliminará todos los registros asociados a esta categoría y no se puede deshacer.',
+                      style: TextStyle(color: Colors.red[700]),
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  style: TextButton.styleFrom(
+                    foregroundColor: Colors.grey[700],
+                  ),
+                  onPressed: () {
+                    Navigator.of(context).pop(false);
+                  },
+                  child: const Text('CANCELAR'),
+                ),
+                TextButton(
+                  style: TextButton.styleFrom(
+                    foregroundColor: Colors.red[700],
+                    backgroundColor: Colors.red[50],
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
+                  ),
+                  onPressed: () {
+                    Navigator.of(context).pop(true);
+                  },
+                  child: const Text('ELIMINAR'),
+                ),
+              ],
+              actionsPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 8,
+              ),
+            );
+          },
+        );
+      },
+      onDismissed: (direction) {
+        // Mark as dismissed immediately to remove from tree
+        setState(() {
+          _isDismissed = true;
+          _isDeleting = true;
+        });
+
+        // Process deletion in the background
+        _deleteCategory();
+      },
+      background: Container(
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.only(right: 20.0),
+        decoration: BoxDecoration(
+          color: Colors.red[50],
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.red[100]!),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            Text(
+              'Eliminar',
+              style: TextStyle(
+                color: Colors.red[700],
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.red,
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.red.withOpacity(0.3),
+                    blurRadius: 5,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: const Icon(
+                Icons.delete_outline,
+                color: Colors.white,
+              ),
+            ),
+          ],
+        ),
+      ),
+      child: CategoryListItem(
+        topCategory: widget.category,
+        onTap: () {
+          // Navigate to category transactions
+          developer.log(
+            'Navigating to category transactions: ${widget.category.name}',
+            name: 'dismissible_category_item',
+          );
+          context.pushNamed(
+            'categoryTransactions',
+            pathParameters: {'id': widget.category.id.toString()},
+            extra: widget.category, // Pass TopCategory as extra
+          );
+        },
+      ),
+    );
+  }
+
+  // Method to handle category deletion with API
+  Future<void> _deleteCategory() async {
+    try {
+      final ref = ProviderScope.containerOf(context);
+
+      // Get userId from session
+      final userSession = ref.read(userSessionNotifierProvider);
+      final userId = userSession.userId;
+
+      if (userId == null) {
+        _showErrorMessage('No se pudo obtener el ID de usuario');
+        widget.onDeleted(); // Refresh the list
+        return;
+      }
+
+      // Call the API
+      final categoryDataSource = ref.read(categoryDataSourceProvider);
+      final success =
+          await categoryDataSource.deleteCategory(widget.category.id, userId);
+
+      if (mounted) {
+        if (success) {
+          _showSuccessMessage(
+              'Categoría ${widget.category.name} eliminada correctamente');
+        } else {
+          _showErrorMessage('No se pudo eliminar la categoría');
+          widget.onDeleted(); // Refresh the list
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        _showErrorMessage('Error al eliminar la categoría: ${e.toString()}');
+        widget.onDeleted(); // Refresh the list
+      }
+
+      developer.log('Error deleting category: $e',
+          name: 'dismissible_category_item', error: e);
+    }
+  }
+
+  void _showSuccessMessage(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.green,
+        behavior: SnackBarBehavior.floating,
+        margin: const EdgeInsets.all(16),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+        ),
+      ),
+    );
+  }
+
+  void _showErrorMessage(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red,
+        behavior: SnackBarBehavior.floating,
+        margin: const EdgeInsets.all(16),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+        ),
+      ),
+    );
   }
 }

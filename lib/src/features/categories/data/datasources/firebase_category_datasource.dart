@@ -69,6 +69,54 @@ class FirebaseCategoryDataSource {
       throw Exception('Failed to connect to the server: $e');
     }
   }
+
+  Future<bool> deleteCategory(int categoryId, String userId) async {
+    final url = '$baseUrl/$categoryId?userId=$userId';
+    developer.log('Making API request to delete category: $url',
+        name: 'category_datasource');
+
+    try {
+      // Get auth headers from user session if available
+      final headers = {
+        'Content-Type': 'application/json; charset=utf-8',
+        'Accept': 'application/json; charset=utf-8',
+      };
+
+      // Add authentication token if available
+      if (userSession != null && userSession!.state.token != null) {
+        headers['Authorization'] = 'Bearer ${userSession!.state.token}';
+        developer.log('Adding authorization header with token',
+            name: 'category_datasource');
+      } else {
+        developer.log('No authentication token available',
+            name: 'category_datasource');
+      }
+
+      final response = await client.delete(
+        Uri.parse(url),
+        headers: headers,
+      );
+
+      developer.log('Delete response status code: ${response.statusCode}',
+          name: 'category_datasource');
+
+      if (response.statusCode == 200) {
+        final responseBody = jsonDecode(response.body);
+        developer.log('Delete response body: $responseBody',
+            name: 'category_datasource');
+        return responseBody['success'] == true;
+      } else {
+        developer.log('Error response: ${response.body}',
+            name: 'category_datasource');
+        throw Exception(
+            'Failed to delete category: ${response.statusCode} - ${response.body}');
+      }
+    } catch (e, stack) {
+      developer.log('Network error during delete: $e',
+          name: 'category_datasource', error: e, stackTrace: stack);
+      throw Exception('Failed to connect to the server: $e');
+    }
+  }
 }
 
 @riverpod
