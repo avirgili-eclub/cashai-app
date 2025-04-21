@@ -3,13 +3,16 @@ import 'dart:developer' as developer;
 import 'dart:io' show Platform;
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:http/http.dart' as http;
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 import '../../domain/dtos/user_registration_dto.dart';
 import '../../domain/models/auth_response.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../../domain/app_user.dart';
+
+// Add part directive for generated code
+part 'auth_repository_impl.g.dart';
 
 class AuthRepositoryImpl implements AuthRepository {
   AuthRepositoryImpl({
@@ -334,13 +337,16 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 }
 
-// Provider for Firebase Auth
-final firebaseAuthProvider = Provider<FirebaseAuth>((ref) {
+// Convert manual provider to generated provider
+@Riverpod(keepAlive: true)
+FirebaseAuth firebaseAuth(FirebaseAuthRef ref) {
   return FirebaseAuth.instance;
-});
+}
 
 // Provider for the repository
-final authRepositoryProvider = Provider<AuthRepository>((ref) {
+// Convert repository provider to generated provider
+@Riverpod(keepAlive: true)
+AuthRepository authRepository(AuthRepositoryRef ref) {
   // Choose the correct host based on platform
   String host;
 
@@ -369,10 +375,12 @@ final authRepositoryProvider = Provider<AuthRepository>((ref) {
     authBaseUrl: authBaseUrl,
     firebaseAuth: ref.watch(firebaseAuthProvider),
   );
-});
+}
 
 // Stream provider for authentication state changes
-final authStateChangesProvider = StreamProvider<User?>((ref) {
+// Convert stream provider to generated provider
+@Riverpod(keepAlive: true)
+Stream<User?> authStateChanges(AuthStateChangesRef ref) {
   final repository = ref.watch(authRepositoryProvider) as AuthRepositoryImpl;
   return repository.authStateChanges();
-});
+}

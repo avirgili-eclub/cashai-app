@@ -7,7 +7,7 @@ part of 'user_session_provider.dart';
 // **************************************************************************
 
 String _$userSessionNotifierHash() =>
-    r'423f336fad0fc84f2715f56d5aeebae6aee5b793';
+    r'bde3774c48478b382ff6caabc3d10e1f4948da4c';
 
 /// See also [UserSessionNotifier].
 @ProviderFor(UserSessionNotifier)

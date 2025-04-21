@@ -42,20 +42,29 @@ class CategoriesScreen extends ConsumerWidget {
             title: const Text('Mis Categorías'),
             actions: [
               IconButton(
+                iconSize: 30, // Increased icon button size
+                padding:
+                    const EdgeInsets.all(8), // Added padding around the button
                 icon: Container(
-                  padding: const EdgeInsets.all(8),
+                  padding: const EdgeInsets.all(10), // Increased inner padding
                   decoration: BoxDecoration(
-                    color: AppStyles.primaryColor.withOpacity(0.1),
+                    color: AppStyles.primaryColor.withOpacity(0.3),
+                    border: Border.all(
+                      color: AppStyles.primaryColor.withOpacity(0.5),
+                      width: 1.5, // Slightly thicker border
+                    ),
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
                     Icons.add,
-                    color: AppStyles.primaryColor,
-                    size: 20,
+                    color: Colors.white,
+                    size: 24, // Increased icon size from 20 to 24
                   ),
                 ),
                 onPressed: () => _showAddCategoryModal(context),
+                tooltip: 'Añadir categoría',
               ),
+              const SizedBox(width: 16), // Increased right spacing
             ],
           ),
           body: _buildCategoriesContent(context, categoriesAsync),
