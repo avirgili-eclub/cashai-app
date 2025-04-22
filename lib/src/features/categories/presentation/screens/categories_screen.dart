@@ -283,12 +283,18 @@ class _DismissibleCategoryItemState extends State<DismissibleCategoryItem> {
   // Local state to track if this item has been dismissed
   bool _isDismissed = false;
   bool _isDeleting = false;
+  bool _isRestoring = false; // New flag for tracking restoration
 
   @override
   Widget build(BuildContext context) {
-    // If already dismissed, don't show anything
-    if (_isDismissed) {
+    // If already dismissed and not being restored, don't show anything
+    if (_isDismissed && !_isRestoring) {
       return const SizedBox.shrink();
+    }
+
+    // If being restored, show with a different background to indicate restoration
+    if (_isRestoring) {
+      return _buildRestoringItem();
     }
 
     return Dismissible(
@@ -366,7 +372,7 @@ class _DismissibleCategoryItemState extends State<DismissibleCategoryItem> {
         );
       },
       onDismissed: (direction) {
-        // Mark as dismissed immediately to remove from tree
+        // Mark as dismissed immediately to remove from tree - optimistic update
         setState(() {
           _isDismissed = true;
           _isDeleting = true;
@@ -433,6 +439,56 @@ class _DismissibleCategoryItemState extends State<DismissibleCategoryItem> {
     );
   }
 
+  // New widget to show when a category is being restored
+  Widget _buildRestoringItem() {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.yellow[50],
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.amber),
+      ),
+      child: Column(
+        children: [
+          CategoryListItem(
+            topCategory: widget.category,
+            onTap: () {
+              // Disable navigation while restoring
+              _showInfoMessage('Restaurando categoría...');
+            },
+          ),
+          Container(
+            color: Colors.amber.withOpacity(0.2),
+            padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 12),
+            child: Row(
+              children: [
+                const Icon(Icons.refresh, size: 16, color: Colors.amber),
+                const SizedBox(width: 8),
+                const Text(
+                  'Restaurando categoría...',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.amber,
+                  ),
+                ),
+                const Spacer(),
+                SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor:
+                        AlwaysStoppedAnimation<Color>(Colors.amber[700]!),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   // Method to handle category deletion with API
   Future<void> _deleteCategory() async {
     try {
@@ -444,7 +500,7 @@ class _DismissibleCategoryItemState extends State<DismissibleCategoryItem> {
 
       if (userId == null) {
         _showErrorMessage('No se pudo obtener el ID de usuario');
-        widget.onDeleted(); // Refresh the list
+        _restoreCategory(); // Restore on error
         return;
       }
 
@@ -457,20 +513,43 @@ class _DismissibleCategoryItemState extends State<DismissibleCategoryItem> {
         if (success) {
           _showSuccessMessage(
               'Categoría ${widget.category.name} eliminada correctamente');
+          // Notify parent about successful deletion to refresh data from server
+          widget.onDeleted();
         } else {
           _showErrorMessage('No se pudo eliminar la categoría');
-          widget.onDeleted(); // Refresh the list
+          _restoreCategory(); // Restore on failure
         }
       }
     } catch (e) {
       if (mounted) {
         _showErrorMessage('Error al eliminar la categoría: ${e.toString()}');
-        widget.onDeleted(); // Refresh the list
+        _restoreCategory(); // Restore on exception
       }
 
       developer.log('Error deleting category: $e',
           name: 'dismissible_category_item', error: e);
     }
+  }
+
+  // New method to restore the category if delete fails
+  void _restoreCategory() {
+    if (!mounted) return;
+
+    setState(() {
+      _isRestoring = true;
+      _isDismissed = false;
+    });
+
+    // Animate the restoration with a brief delay
+    Future.delayed(const Duration(milliseconds: 300), () {
+      if (mounted) {
+        setState(() {
+          _isRestoring = false;
+          _isDeleting = false;
+        });
+        widget.onDeleted(); // Refresh the parent list
+      }
+    });
   }
 
   void _showSuccessMessage(String message) {
@@ -492,6 +571,21 @@ class _DismissibleCategoryItemState extends State<DismissibleCategoryItem> {
       SnackBar(
         content: Text(message),
         backgroundColor: Colors.red,
+        behavior: SnackBarBehavior.floating,
+        margin: const EdgeInsets.all(16),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+        ),
+      ),
+    );
+  }
+
+  // New method for info messages
+  void _showInfoMessage(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.amber,
         behavior: SnackBarBehavior.floating,
         margin: const EdgeInsets.all(16),
         shape: RoundedRectangleBorder(
