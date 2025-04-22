@@ -513,8 +513,8 @@ class _DismissibleCategoryItemState extends State<DismissibleCategoryItem> {
         if (success) {
           _showSuccessMessage(
               'Categoría ${widget.category.name} eliminada correctamente');
-          // Notify parent about successful deletion to refresh data from server
-          widget.onDeleted();
+          // Don't call widget.onDeleted() here - no need to reload the list
+          // The item is already removed from the UI due to optimistic update
         } else {
           _showErrorMessage('No se pudo eliminar la categoría');
           _restoreCategory(); // Restore on failure
@@ -547,7 +547,8 @@ class _DismissibleCategoryItemState extends State<DismissibleCategoryItem> {
           _isRestoring = false;
           _isDeleting = false;
         });
-        widget.onDeleted(); // Refresh the parent list
+        widget
+            .onDeleted(); // Only refresh the parent list when restoring a category
       }
     });
   }
