@@ -31,11 +31,16 @@ class DashboardScreen extends ConsumerWidget {
         title: const Text('Cash AI'),
         backgroundColor: AppStyles.primaryColor,
         foregroundColor: Colors.white,
+        // Move profile icon to the leading position
+        leading: IconButton(
+          icon: const Icon(Icons.person),
+          onPressed: () => context.pushNamed(AppRoute.userProfile.name),
+        ),
         actions: [
-          // Navigate to user profile screen using AppRoute enum
+          // Add notification bell icon without any action for now
           IconButton(
-            icon: const Icon(Icons.person),
-            onPressed: () => context.pushNamed(AppRoute.userProfile.name),
+            icon: const Icon(Icons.notifications),
+            onPressed: null, // Disabled for now, will be implemented later
           ),
         ],
       ),
@@ -49,31 +54,7 @@ class DashboardScreen extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Display current user info for debugging
-              Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Usuario: ${userSession.username ?? "N/A"}',
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                    Text(
-                      'Email: ${userSession.email ?? "N/A"}',
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                    Text(
-                      'ID: ${userSession.userId}',
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                    Text(
-                      'Autorizado: ${userSession.token != null ? "Sí" : "No"}',
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                  ],
-                ),
-              ),
+              // Remove the debug information section
               // Use username from session if available, otherwise fallback to "Usuario"
               AppHeader(userName: userSession.username ?? 'Usuario'),
               _buildBalanceCardWithErrorHandler(ref),

@@ -34,15 +34,6 @@ class AppHeader extends StatelessWidget {
               ),
             ],
           ),
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: Colors.grey[200],
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: const Icon(Icons.person),
-          ),
         ],
       ),
     );
