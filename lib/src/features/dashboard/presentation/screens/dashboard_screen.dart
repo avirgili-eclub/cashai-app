@@ -1,8 +1,10 @@
 import 'dart:developer' as developer;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart'; // Add this import
 import '../../../../core/auth/providers/user_session_provider.dart';
 import '../../../../core/styles/app_styles.dart';
+import '../../../../routing/app_router.dart'; // Add this import for AppRoute
 import '../controllers/balance_controller.dart';
 import '../widgets/app_header.dart';
 import '../widgets/balance_card.dart';
@@ -30,10 +32,10 @@ class DashboardScreen extends ConsumerWidget {
         backgroundColor: AppStyles.primaryColor,
         foregroundColor: Colors.white,
         actions: [
-          // This is just for testing purposes - you'd remove this in production
+          // Navigate to user profile screen using AppRoute enum
           IconButton(
             icon: const Icon(Icons.person),
-            onPressed: () => _showUserSelector(context, ref),
+            onPressed: () => context.pushNamed(AppRoute.userProfile.name),
           ),
         ],
       ),
@@ -72,8 +74,8 @@ class DashboardScreen extends ConsumerWidget {
                   ],
                 ),
               ),
-              // Use username from session if available, otherwise fallback to "Ale V."
-              AppHeader(userName: userSession.username ?? 'Ale V.'),
+              // Use username from session if available, otherwise fallback to "Usuario"
+              AppHeader(userName: userSession.username ?? 'Usuario'),
               _buildBalanceCardWithErrorHandler(ref),
               const SizedBox(height: 16),
               // New collapsible card that contains both QuickAction and Categories sections
@@ -139,44 +141,6 @@ class DashboardScreen extends ConsumerWidget {
     }
   }
 
-  // Simple user selector dialog for testing
-  void _showUserSelector(BuildContext context, WidgetRef ref) {
-    final controller = TextEditingController(
-      text: ref.read(userSessionNotifierProvider).userId,
-    );
-
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Change Test User ID'),
-        content: TextField(
-          controller: controller,
-          decoration: const InputDecoration(
-            labelText: 'User ID',
-            hintText: 'Enter a user ID for testing',
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              final userId = controller.text.trim();
-              if (userId.isNotEmpty) {
-                ref
-                    .read(userSessionNotifierProvider.notifier)
-                    .setUserId(userId);
-                // Refresh the balance with the new user ID
-                ref.read(balanceControllerProvider.notifier).refreshBalance();
-              }
-              Navigator.pop(context);
-            },
-            child: const Text('Apply'),
-          ),
-        ],
-      ),
-    );
-  }
+  // I've removed the _showUserSelector method as it's no longer needed
+  // since we're now navigating to the user profile screen
 }

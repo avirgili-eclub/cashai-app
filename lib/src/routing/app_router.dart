@@ -23,6 +23,7 @@ import '../features/dashboard/presentation/screens/transaction_details_screen.da
 import '../features/dashboard/presentation/screens/all_transactions_screen.dart';
 import '../features/transactions/presentation/screens/add_transaction_screen.dart';
 import '../core/auth/providers/user_session_provider.dart';
+import '../features/user/presentation/screens/user_profile_screen.dart';
 
 part 'app_router.g.dart';
 
@@ -47,6 +48,7 @@ enum AppRoute {
   addTransaction,
   expenses,
   incomes,
+  userProfile, // Add this entry for the user profile route
 }
 
 // Extension to combine multiple refresh sources
@@ -232,6 +234,15 @@ GoRouter goRouter(Ref ref) {
             child: AddTransactionScreen(initialTabIndex: initialTabIndex),
           );
         },
+      ),
+      // User profile route - updated to use AppRoute enum
+      GoRoute(
+        path: '/user-profile',
+        name: AppRoute
+            .userProfile.name, // Use enum value instead of string literal
+        pageBuilder: (context, state) => const NoTransitionPage(
+          child: UserProfileScreen(),
+        ),
       ),
       // Bottom navigation with tabs
       StatefulShellRoute.indexedStack(
