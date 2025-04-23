@@ -165,7 +165,7 @@ class TransactionDetailsScreen extends ConsumerWidget {
 
                     const SizedBox(height: 24),
 
-                    // Category dropdown
+                    // Category display - using categoryName directly from the transaction object
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -178,38 +178,26 @@ class TransactionDetailsScreen extends ConsumerWidget {
                         ),
                         const SizedBox(height: 8),
                         Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 14),
                           decoration: BoxDecoration(
                             border: Border.all(color: Colors.grey.shade300),
                             borderRadius: BorderRadius.circular(8),
+                            color: Colors.grey.shade50,
                           ),
-                          child: DropdownButtonFormField<String>(
-                            decoration: const InputDecoration(
-                              contentPadding:
-                                  EdgeInsets.symmetric(horizontal: 16),
-                              border: InputBorder.none,
+                          child: Text(
+                            // Display category name directly from transaction or use a fallback
+                            currentTransaction.categoryName ?? 'Sin categoría',
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: Colors.grey.shade800,
                             ),
-                            value: 'Comida y Bebida',
-                            items: [
-                              'Comida y Bebida',
-                              'Transporte',
-                              'Entretenimiento',
-                              'Salud',
-                              'Otro',
-                            ].map((String category) {
-                              return DropdownMenuItem<String>(
-                                value: category,
-                                child: Text(category),
-                              );
-                            }).toList(),
-                            onChanged: (value) {
-                              // Handle category change
-                              developer.log('Category changed to: $value',
-                                  name: 'transaction_details');
-                            },
                           ),
                         ),
                       ],
                     ),
+
                     const SizedBox(height: 24),
 
                     // Notes textarea

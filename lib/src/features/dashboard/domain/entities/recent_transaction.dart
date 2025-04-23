@@ -14,6 +14,8 @@ class RecentTransaction {
   final String?
       emoji; // Changed to nullable since it can be null in the response
   final String? color;
+  final int? categoryId; // Added new property for category ID
+  final String? categoryName; // Added new property for category name
 
   RecentTransaction({
     required this.id,
@@ -30,6 +32,8 @@ class RecentTransaction {
     this.sharedGroupId,
     this.emoji,
     this.color,
+    this.categoryId,
+    this.categoryName,
   });
 
   factory RecentTransaction.fromJson(Map<String, dynamic> json) {
@@ -48,6 +52,8 @@ class RecentTransaction {
       sharedGroupId: json['sharedGroupId'] as int?,
       emoji: json['emoji'] as String?, // Handle null safely
       color: json['color'] as String?, // Handle null safely
+      categoryId: json['categoryId'] as int?, // Parse category ID
+      categoryName: json['categoryName'] as String?, // Parse category name
     );
   }
 }
