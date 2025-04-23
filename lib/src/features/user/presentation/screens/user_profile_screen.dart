@@ -22,21 +22,48 @@ class UserProfileScreen extends ConsumerWidget {
     // TODO: Replace with actual subscription retrieval
     const subscriptionType = UserSubscriptionType.free;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Mi Perfil'),
-        backgroundColor: AppStyles.primaryColor,
-        foregroundColor: Colors.white,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.pop(),
+    return DefaultTabController(
+      length: 3,
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Mi Perfil'),
+          backgroundColor: AppStyles.primaryColor,
+          foregroundColor: Colors.white,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () => context.pop(),
+          ),
+          actions: [
+            // Logout button in the app bar for easy access
+            IconButton(
+              icon: const Icon(Icons.logout),
+              onPressed: () => _confirmLogout(context, ref),
+              tooltip: 'Cerrar sesión',
+            ),
+          ],
+          bottom: const TabBar(
+            labelColor: Colors.white,
+            unselectedLabelColor: Colors.white70,
+            indicatorColor: Colors.white,
+            tabs: [
+              Tab(
+                text: 'Información',
+                icon: Icon(Icons.person_outline),
+              ),
+              Tab(
+                text: 'Preferencias',
+                icon: Icon(Icons.settings_outlined),
+              ),
+              Tab(
+                text: 'Suscripción',
+                icon: Icon(Icons.card_membership_outlined),
+              ),
+            ],
+          ),
         ),
-      ),
-      body: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        body: Column(
           children: [
-            // User information header
+            // User information header - stays visible across all tabs
             Container(
               padding: const EdgeInsets.all(16.0),
               child: Column(
@@ -89,312 +116,291 @@ class UserProfileScreen extends ConsumerWidget {
               ),
             ),
 
-            const Divider(),
-
-            // User details section
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+            // Tab content takes the rest of the screen
+            Expanded(
+              child: TabBarView(
                 children: [
-                  const Text(
-                    'Información Personal',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Email field
-                  EditableField(
-                    label: 'Correo electrónico',
-                    value: userSession.email ?? 'No disponible',
-                    icon: Icons.email_outlined,
-                    onEdit: () => _showEditDialog(
-                      context,
-                      'Correo electrónico',
-                      userSession.email ?? '',
-                      (newEmail) {
-                        // TODO: Implement email update logic
-                      },
-                    ),
-                  ),
-
-                  const SizedBox(height: 16),
-
-                  // Nickname field
-                  EditableField(
-                    label: 'Nombre de usuario',
-                    value: userSession.username ?? 'No disponible',
-                    icon: Icons.person_outline,
-                    onEdit: () => _showEditDialog(
-                      context,
-                      'Nombre de usuario',
-                      userSession.username ?? '',
-                      (newUsername) {
-                        // TODO: Implement username update logic
-                      },
-                    ),
-                  ),
-
-                  const SizedBox(height: 16),
-
-                  // Phone field (read-only for now)
-                  ListTile(
-                    leading: Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: AppStyles.primaryColor.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Icon(
-                        Icons.phone_android,
-                        color: AppStyles.primaryColor,
-                      ),
-                    ),
-                    title: const Text(
-                      'Teléfono',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey,
-                      ),
-                    ),
-                    subtitle: Text(
-                      '+595 981 123456', // Replace with actual phone number
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    contentPadding: EdgeInsets.zero,
-                  ),
-
-                  const SizedBox(height: 16),
-
-                  // Password change option
-                  ListTile(
-                    leading: Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: AppStyles.primaryColor.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Icon(
-                        Icons.lock_outline,
-                        color: AppStyles.primaryColor,
-                      ),
-                    ),
-                    title: const Text('Cambiar contraseña'),
-                    trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                    contentPadding: EdgeInsets.zero,
-                    onTap: () => _showPasswordChangeDialog(context),
-                  ),
-                ],
-              ),
-            ),
-
-            const Divider(),
-
-            // Preferences section
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Preferencias',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Monthly income field
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Ingreso mensual',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        decoration: BoxDecoration(
-                          border: Border.all(color: Colors.grey.shade300),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: TextField(
-                          controller: monthlyIncomeController,
-                          decoration: const InputDecoration(
-                            border: InputBorder.none,
-                            prefixText: 'Gs. ',
-                            hintText: '0',
-                          ),
-                          keyboardType: TextInputType.number,
-                          onChanged: (value) {
-                            // TODO: Save the monthly income value
-                          },
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 16),
-
-                  // Audio categorization prompt preference
-                  ValueListenableBuilder(
-                    valueListenable: shouldPromptCategorization,
-                    builder: (context, value, child) {
-                      return SwitchListTile(
-                        contentPadding: EdgeInsets.zero,
-                        title: const Text(
-                          'Confirmar categoría en audios',
-                          style: TextStyle(fontWeight: FontWeight.w500),
-                        ),
-                        subtitle: const Text(
-                          'Preguntar qué categoría asignar al enviar un audio',
-                          style: TextStyle(fontSize: 12),
-                        ),
-                        value: value,
-                        activeColor: AppStyles.primaryColor,
-                        onChanged: (newValue) {
-                          shouldPromptCategorization.value = newValue;
-                          // TODO: Save the preference
-                        },
-                      );
-                    },
-                  ),
-
-                  // Transaction notification preference
-                  ValueListenableBuilder(
-                    valueListenable: shouldNotifyTransactions,
-                    builder: (context, value, child) {
-                      return SwitchListTile(
-                        contentPadding: EdgeInsets.zero,
-                        title: const Text(
-                          'Notificar categorización',
-                          style: TextStyle(fontWeight: FontWeight.w500),
-                        ),
-                        subtitle: const Text(
-                          'Notificar la categoría asignada a cada transacción',
-                          style: TextStyle(fontSize: 12),
-                        ),
-                        value: value,
-                        activeColor: AppStyles.primaryColor,
-                        onChanged: (newValue) {
-                          shouldNotifyTransactions.value = newValue;
-                          // TODO: Save the preference
-                        },
-                      );
-                    },
-                  ),
-                ],
-              ),
-            ),
-
-            const Divider(),
-
-            // Subscription section
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Mi Suscripción',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Current subscription card
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      border: Border.all(color: Colors.grey.shade300),
-                      borderRadius: BorderRadius.circular(12),
-                      color: _getSubscriptionColor(subscriptionType)
-                          .withOpacity(0.1),
-                    ),
+                  // Tab 1: Personal Information
+                  SingleChildScrollView(
+                    padding: const EdgeInsets.all(16.0),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        const Text(
+                          'Información Personal',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+
+                        // Email field
+                        EditableField(
+                          label: 'Correo electrónico',
+                          value: userSession.email ?? 'No disponible',
+                          icon: Icons.email_outlined,
+                          onEdit: () => _showEditDialog(
+                            context,
+                            'Correo electrónico',
+                            userSession.email ?? '',
+                            (newEmail) {
+                              // TODO: Implement email update logic
+                            },
+                          ),
+                        ),
+
+                        const SizedBox(height: 16),
+
+                        // Nickname field
+                        EditableField(
+                          label: 'Nombre de usuario',
+                          value: userSession.username ?? 'No disponible',
+                          icon: Icons.person_outline,
+                          onEdit: () => _showEditDialog(
+                            context,
+                            'Nombre de usuario',
+                            userSession.username ?? '',
+                            (newUsername) {
+                              // TODO: Implement username update logic
+                            },
+                          ),
+                        ),
+
+                        const SizedBox(height: 16),
+
+                        // Phone field (read-only for now)
+                        ListTile(
+                          leading: Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: AppStyles.primaryColor.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Icon(
+                              Icons.phone_android,
+                              color: AppStyles.primaryColor,
+                            ),
+                          ),
+                          title: const Text(
+                            'Teléfono',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey,
+                            ),
+                          ),
+                          subtitle: Text(
+                            '+595 981 123456', // Replace with actual phone number
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          contentPadding: EdgeInsets.zero,
+                        ),
+
+                        const SizedBox(height: 16),
+
+                        // Monthly income field moved to Personal Information
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              _getSubscriptionLabel(subscriptionType),
+                            const Text(
+                              'Ingreso mensual',
                               style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: _getSubscriptionColor(subscriptionType),
+                                fontSize: 14,
+                                color: Colors.grey,
                               ),
                             ),
+                            const SizedBox(height: 8),
                             Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 10, vertical: 4),
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 16),
                               decoration: BoxDecoration(
-                                color: _getSubscriptionColor(subscriptionType),
-                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(color: Colors.grey.shade300),
+                                borderRadius: BorderRadius.circular(8),
                               ),
-                              child: const Text(
-                                'Actual',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
+                              child: TextField(
+                                controller: monthlyIncomeController,
+                                decoration: const InputDecoration(
+                                  border: InputBorder.none,
+                                  prefixText: 'Gs. ',
+                                  hintText: '0',
                                 ),
+                                keyboardType: TextInputType.number,
+                                onChanged: (value) {
+                                  // TODO: Save the monthly income value
+                                },
                               ),
                             ),
                           ],
                         ),
-                        const SizedBox(height: 8),
-                        Text(
-                          _getSubscriptionDescription(subscriptionType),
+
+                        const SizedBox(height: 16),
+
+                        // Password change option
+                        ListTile(
+                          leading: Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: AppStyles.primaryColor.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Icon(
+                              Icons.lock_outline,
+                              color: AppStyles.primaryColor,
+                            ),
+                          ),
+                          title: const Text('Cambiar contraseña'),
+                          trailing:
+                              const Icon(Icons.arrow_forward_ios, size: 16),
+                          contentPadding: EdgeInsets.zero,
+                          onTap: () => _showPasswordChangeDialog(context),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  // Tab 2: Preferences
+                  SingleChildScrollView(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Preferencias',
                           style: TextStyle(
-                            color: Colors.grey[600],
-                            fontSize: 14,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+
+                        // Audio categorization prompt preference
+                        ValueListenableBuilder(
+                          valueListenable: shouldPromptCategorization,
+                          builder: (context, value, child) {
+                            return SwitchListTile(
+                              contentPadding: EdgeInsets.zero,
+                              title: const Text(
+                                'Confirmar categoría en audios',
+                                style: TextStyle(fontWeight: FontWeight.w500),
+                              ),
+                              subtitle: const Text(
+                                'Preguntar qué categoría asignar al enviar un audio',
+                                style: TextStyle(fontSize: 12),
+                              ),
+                              value: value,
+                              activeColor: AppStyles.primaryColor,
+                              onChanged: (newValue) {
+                                shouldPromptCategorization.value = newValue;
+                                // TODO: Save the preference
+                              },
+                            );
+                          },
+                        ),
+
+                        // Transaction notification preference
+                        ValueListenableBuilder(
+                          valueListenable: shouldNotifyTransactions,
+                          builder: (context, value, child) {
+                            return SwitchListTile(
+                              contentPadding: EdgeInsets.zero,
+                              title: const Text(
+                                'Notificar categorización',
+                                style: TextStyle(fontWeight: FontWeight.w500),
+                              ),
+                              subtitle: const Text(
+                                'Notificar la categoría asignada a cada transacción',
+                                style: TextStyle(fontSize: 12),
+                              ),
+                              value: value,
+                              activeColor: AppStyles.primaryColor,
+                              onChanged: (newValue) {
+                                shouldNotifyTransactions.value = newValue;
+                                // TODO: Save the preference
+                              },
+                            );
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  // Tab 3: Subscription
+                  SingleChildScrollView(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Mi Suscripción',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+
+                        // Current subscription card
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            border: Border.all(color: Colors.grey.shade300),
+                            borderRadius: BorderRadius.circular(12),
+                            color: _getSubscriptionColor(subscriptionType)
+                                .withOpacity(0.1),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    _getSubscriptionLabel(subscriptionType),
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                      color: _getSubscriptionColor(
+                                          subscriptionType),
+                                    ),
+                                  ),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 10, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      color: _getSubscriptionColor(
+                                          subscriptionType),
+                                      borderRadius: BorderRadius.circular(16),
+                                    ),
+                                    child: const Text(
+                                      'Actual',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                _getSubscriptionDescription(subscriptionType),
+                                style: TextStyle(
+                                  color: Colors.grey[600],
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ],
                     ),
                   ),
                 ],
-              ),
-            ),
-
-            // Logout button
-            Padding(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 16.0, vertical: 24.0),
-              child: SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () => _confirmLogout(context, ref),
-                  style: ElevatedButton.styleFrom(
-                    foregroundColor: Colors.white,
-                    backgroundColor: Colors.red,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                  child: const Text(
-                    'Cerrar sesión',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
               ),
             ),
           ],
