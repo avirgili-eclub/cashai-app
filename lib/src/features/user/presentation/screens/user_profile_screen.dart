@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:currency_picker/currency_picker.dart';
 import '../../../../core/auth/providers/user_session_provider.dart';
 import '../../../../core/styles/app_styles.dart';
 import '../../domain/entities/user_subscription_type.dart';
@@ -18,6 +19,13 @@ class UserProfileScreen extends ConsumerWidget {
     final monthlyIncomeController = TextEditingController(text: '0');
     final shouldPromptCategorization = ValueNotifier<bool>(true);
     final shouldNotifyTransactions = ValueNotifier<bool>(false);
+    // Change default to false for biometric authentication
+    final shouldUseBiometrics = ValueNotifier<bool>(false);
+
+    // Currency selection state
+    final selectedCurrency = ValueNotifier<Currency>(
+        CurrencyService().findByCode('PYG') ??
+            CurrencyService().getAll().first);
 
     // TODO: Replace with actual subscription retrieval
     const subscriptionType = UserSubscriptionType.free;
@@ -276,7 +284,7 @@ class UserProfileScreen extends ConsumerWidget {
                         ),
                         const SizedBox(height: 16),
 
-                        // Audio categorization prompt preference
+                        // Audio categorization prompt preference with icon
                         ValueListenableBuilder(
                           valueListenable: shouldPromptCategorization,
                           builder: (context, value, child) {
@@ -296,11 +304,23 @@ class UserProfileScreen extends ConsumerWidget {
                                 shouldPromptCategorization.value = newValue;
                                 // TODO: Save the preference
                               },
+                              secondary: Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color:
+                                      AppStyles.primaryColor.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Icon(
+                                  Icons.mic_outlined,
+                                  color: AppStyles.primaryColor,
+                                ),
+                              ),
                             );
                           },
                         ),
 
-                        // Transaction notification preference
+                        // Transaction notification preference with icon
                         ValueListenableBuilder(
                           valueListenable: shouldNotifyTransactions,
                           builder: (context, value, child) {
@@ -320,6 +340,133 @@ class UserProfileScreen extends ConsumerWidget {
                                 shouldNotifyTransactions.value = newValue;
                                 // TODO: Save the preference
                               },
+                              secondary: Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color:
+                                      AppStyles.primaryColor.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Icon(
+                                  Icons.notifications_outlined,
+                                  color: AppStyles.primaryColor,
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+
+                        // Biometric authentication preference
+                        ValueListenableBuilder(
+                          valueListenable: shouldUseBiometrics,
+                          builder: (context, value, child) {
+                            return SwitchListTile(
+                              contentPadding: EdgeInsets.zero,
+                              title: const Text(
+                                'Usar autenticación biométrica',
+                                style: TextStyle(fontWeight: FontWeight.w500),
+                              ),
+                              subtitle: const Text(
+                                'Iniciar sesión con Face ID o huella digital',
+                                style: TextStyle(fontSize: 12),
+                              ),
+                              value: value,
+                              activeColor: AppStyles.primaryColor,
+                              onChanged: (newValue) {
+                                shouldUseBiometrics.value = newValue;
+                                // TODO: Implement biometric authentication logic
+                              },
+                              secondary: Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color:
+                                      AppStyles.primaryColor.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Icon(
+                                  Icons.fingerprint,
+                                  color: AppStyles.primaryColor,
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+
+                        const SizedBox(height: 24),
+
+                        // Currency selection moved to the end
+                        const Text(
+                          'Moneda',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+
+                        ValueListenableBuilder(
+                          valueListenable: selectedCurrency,
+                          builder: (context, currency, _) {
+                            return InkWell(
+                              onTap: () {
+                                showCurrencyPicker(
+                                  context: context,
+                                  showFlag: true,
+                                  showCurrencyName: true,
+                                  showCurrencyCode: true,
+                                  onSelect: (Currency currency) {
+                                    selectedCurrency.value = currency;
+                                    // TODO: Save the selected currency
+                                  },
+                                  favorite: ['PYG', 'USD', 'EUR', 'BRL', 'ARS'],
+                                );
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 16, vertical: 12),
+                                decoration: BoxDecoration(
+                                  border:
+                                      Border.all(color: Colors.grey.shade300),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Text(
+                                          CurrencyUtils.currencyToEmoji(
+                                              currency),
+                                          style: const TextStyle(fontSize: 24),
+                                        ),
+                                        const SizedBox(width: 12),
+                                        Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              currency.name,
+                                              style: const TextStyle(
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.w500,
+                                              ),
+                                            ),
+                                            Text(
+                                              currency.code,
+                                              style: TextStyle(
+                                                fontSize: 14,
+                                                color: Colors.grey.shade600,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
+                                    const Icon(Icons.arrow_drop_down),
+                                  ],
+                                ),
+                              ),
                             );
                           },
                         ),
