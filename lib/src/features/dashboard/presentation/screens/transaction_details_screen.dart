@@ -1,14 +1,17 @@
 import 'dart:developer' as developer;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/utils/emoji_formatter.dart';
 import '../../../../core/utils/color_utils.dart';
 import '../../../../core/presentation/widgets/money_text.dart';
+import '../../../../core/utils/money_formatter.dart';
 import '../../domain/entities/recent_transaction.dart';
 import '../controllers/transaction_controller.dart';
 
-class TransactionDetailsScreen extends ConsumerWidget {
+// Convert to StatefulWidget to manage edit mode
+class TransactionDetailsScreen extends ConsumerStatefulWidget {
   final String transactionId;
   final RecentTransaction? transaction;
 
@@ -19,17 +22,87 @@ class TransactionDetailsScreen extends ConsumerWidget {
   }) : super(key: key);
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    developer.log('Building TransactionDetailsScreen for ID: $transactionId',
-        name: 'transaction_details');
+  ConsumerState<TransactionDetailsScreen> createState() =>
+      _TransactionDetailsScreenState();
+}
 
-    // Use the passed transaction or fetch it from a provider in a real app
-    final currentTransaction = transaction;
+class _TransactionDetailsScreenState
+    extends ConsumerState<TransactionDetailsScreen> {
+  bool _isEditMode = false;
+  late TextEditingController notesController;
+  late TextEditingController amountController;
+  late String categoryName;
 
-    // Create a TextEditingController for the notes field
-    final TextEditingController notesController = TextEditingController(
-      text: currentTransaction?.invoiceText ?? '',
+  @override
+  void initState() {
+    super.initState();
+
+    // Initialize controllers with transaction data
+    notesController = TextEditingController(
+      text: widget.transaction?.invoiceText ?? '',
     );
+
+    // Format amount using MoneyFormatter for display
+    final amount = widget.transaction?.amount ?? 0.0;
+    final formattedAmount =
+        MoneyFormatter.formatAmount(amount).replaceFirst('Gs. ', '');
+    amountController = TextEditingController(text: formattedAmount);
+
+    // Store category name
+    categoryName = widget.transaction?.categoryName ?? 'Sin categoría';
+  }
+
+  @override
+  void dispose() {
+    notesController.dispose();
+    amountController.dispose();
+    super.dispose();
+  }
+
+  void _toggleEditMode() {
+    setState(() {
+      _isEditMode = !_isEditMode;
+    });
+  }
+
+  Future<void> _saveChanges() async {
+    // Parse the formatted amount string back to a number
+    double? parsedAmount;
+    try {
+      // Remove currency symbol, thousand separators, and other non-numeric chars
+      final amountStr = amountController.text
+          .replaceAll('Gs. ', '')
+          .replaceAll('.', '')
+          .trim();
+      parsedAmount = double.tryParse(amountStr);
+    } catch (e) {
+      developer.log('Error parsing amount: ${amountController.text}',
+          name: 'transaction_details', error: e);
+      parsedAmount = null;
+    }
+
+    // Here we would call the API to save changes
+    developer.log(
+      'Changes to save - Notes: ${notesController.text}, Amount: $parsedAmount',
+      name: 'transaction_details',
+    );
+
+    _toggleEditMode();
+
+    // Show confirmation snackbar
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Cambios guardados con éxito'),
+        backgroundColor: Colors.green,
+        behavior: SnackBarBehavior.fixed,
+        duration: Duration(seconds: 2),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final currentTransaction = widget.transaction;
 
     if (currentTransaction == null) {
       return Scaffold(
@@ -128,7 +201,7 @@ class TransactionDetailsScreen extends ConsumerWidget {
                     ),
                     const SizedBox(height: 24),
 
-                    // Amount section - Fix alignment by using a container with full width
+                    // Amount section - editable or read-only based on mode
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -140,32 +213,66 @@ class TransactionDetailsScreen extends ConsumerWidget {
                           ),
                         ),
                         const SizedBox(height: 8),
-                        Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 16, vertical: 12),
-                          decoration: BoxDecoration(
-                            border: Border.all(color: Colors.grey.shade300),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: MoneyText(
-                            amount: currentTransaction.amount,
-                            currency: 'Gs.',
-                            isExpense: isDebit,
-                            isIncome: !isDebit,
-                            showSign: true,
-                            style: const TextStyle(
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
+                        _isEditMode
+                            ? Container(
+                                decoration: BoxDecoration(
+                                  border:
+                                      Border.all(color: Colors.grey.shade300),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: TextField(
+                                  controller: amountController,
+                                  decoration: const InputDecoration(
+                                    contentPadding: EdgeInsets.symmetric(
+                                        horizontal: 16, vertical: 12),
+                                    prefixText: 'Gs. ',
+                                    border: InputBorder.none,
+                                  ),
+                                  style: const TextStyle(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                  keyboardType: TextInputType.number,
+                                  inputFormatters: [
+                                    // Use a custom formatter for thousands separators
+                                    FilteringTextInputFormatter.digitsOnly,
+                                    _ThousandsSeparatorInputFormatter(),
+                                  ],
+                                  onChanged: (value) {
+                                    // Optional: real-time validation or other actions
+                                  },
+                                ),
+                              )
+                            : Container(
+                                width: double.infinity,
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 16, vertical: 12),
+                                decoration: BoxDecoration(
+                                  border:
+                                      Border.all(color: Colors.grey.shade300),
+                                  borderRadius: BorderRadius.circular(8),
+                                  color: _isEditMode
+                                      ? Colors.white
+                                      : Colors.grey.shade50,
+                                ),
+                                child: MoneyText(
+                                  amount: currentTransaction.amount,
+                                  currency: 'Gs.',
+                                  isExpense: isDebit,
+                                  isIncome: !isDebit,
+                                  showSign: true,
+                                  style: const TextStyle(
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
                       ],
                     ),
 
                     const SizedBox(height: 24),
 
-                    // Category display - using categoryName directly from the transaction object
+                    // Category display - currently read-only in both modes
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -187,8 +294,7 @@ class TransactionDetailsScreen extends ConsumerWidget {
                             color: Colors.grey.shade50,
                           ),
                           child: Text(
-                            // Display category name directly from transaction or use a fallback
-                            currentTransaction.categoryName ?? 'Sin categoría',
+                            categoryName,
                             style: TextStyle(
                               fontSize: 16,
                               color: Colors.grey.shade800,
@@ -200,7 +306,7 @@ class TransactionDetailsScreen extends ConsumerWidget {
 
                     const SizedBox(height: 24),
 
-                    // Notes textarea
+                    // Notes textarea - editable or read-only based on mode
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -216,15 +322,19 @@ class TransactionDetailsScreen extends ConsumerWidget {
                           decoration: BoxDecoration(
                             border: Border.all(color: Colors.grey.shade300),
                             borderRadius: BorderRadius.circular(8),
+                            color: _isEditMode
+                                ? Colors.white
+                                : Colors.grey.shade50,
                           ),
                           child: TextField(
-                            controller: notesController, // Apply the controller
+                            controller: notesController,
                             decoration: const InputDecoration(
                               contentPadding: EdgeInsets.all(16),
                               border: InputBorder.none,
                               hintText: 'Agrega notas sobre esta transacción',
                             ),
                             maxLines: 3,
+                            enabled: _isEditMode,
                           ),
                         ),
                       ],
@@ -236,13 +346,7 @@ class TransactionDetailsScreen extends ConsumerWidget {
               // Action buttons
               const SizedBox(height: 24),
               ElevatedButton(
-                onPressed: () {
-                  // Save changes logic
-                  developer.log(
-                      'Save changes pressed with notes: ${notesController.text}',
-                      name: 'transaction_details');
-                  context.pop();
-                },
+                onPressed: _isEditMode ? _saveChanges : _toggleEditMode,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Theme.of(context).primaryColor,
                   foregroundColor: Colors.white,
@@ -251,27 +355,25 @@ class TransactionDetailsScreen extends ConsumerWidget {
                     borderRadius: BorderRadius.circular(8),
                   ),
                 ),
-                child: const Text('Guardar Cambios'),
+                child: Text(_isEditMode ? 'Guardar Cambios' : 'Editar Cambios'),
               ),
               const SizedBox(height: 12),
-              OutlinedButton(
-                onPressed: () {
-                  // Delete transaction logic
-                  developer.log('Delete transaction pressed',
-                      name: 'transaction_details');
-                  // Show confirmation dialog before deleting
-                  _showDeleteConfirmationDialog(context);
-                },
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: Colors.black,
-                  backgroundColor: Colors.grey[200],
-                  minimumSize: const Size(double.infinity, 50),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
+              // Delete button only visible when not in edit mode
+              if (!_isEditMode)
+                OutlinedButton(
+                  onPressed: () {
+                    _showDeleteConfirmationDialog(context);
+                  },
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.black,
+                    backgroundColor: Colors.grey[200],
+                    minimumSize: const Size(double.infinity, 50),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
                   ),
+                  child: const Text('Eliminar Transacción'),
                 ),
-                child: const Text('Eliminar Transacción'),
-              ),
             ],
           ),
         ),
@@ -317,8 +419,9 @@ class TransactionDetailsScreen extends ConsumerWidget {
                 return TextButton(
                   onPressed: () async {
                     // Get transaction ID from the transaction object
-                    final transId =
-                        int.tryParse(transactionId) ?? transaction?.id ?? -1;
+                    final transId = int.tryParse(widget.transactionId) ??
+                        widget.transaction?.id ??
+                        -1;
 
                     if (transId <= 0) {
                       developer.log('Invalid transaction ID: $transId',
@@ -377,6 +480,50 @@ class TransactionDetailsScreen extends ConsumerWidget {
           ],
         );
       },
+    );
+  }
+}
+
+// Custom formatter for adding thousands separators
+class _ThousandsSeparatorInputFormatter extends TextInputFormatter {
+  static const separator =
+      '.'; // Paraguayan format uses dot as thousands separator
+
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    // Return early if the new value is empty
+    if (newValue.text.isEmpty) {
+      return newValue;
+    }
+
+    // Remove all non-digit characters
+    String newValueText = newValue.text.replaceAll(RegExp(r'[^\d]'), '');
+
+    // Add thousands separators
+    String formattedText = '';
+    for (int i = 0; i < newValueText.length; i++) {
+      // Add a separator every 3 digits from the right
+      if (i > 0 && (newValueText.length - i) % 3 == 0) {
+        formattedText += separator;
+      }
+      formattedText += newValueText[i];
+    }
+
+    // Calculate new selection positions
+    int selectionIndex =
+        newValue.selection.end + (formattedText.length - newValue.text.length);
+
+    // Adjust for possible separator characters that might have been added
+    if (selectionIndex < 0) selectionIndex = 0;
+    if (selectionIndex > formattedText.length)
+      selectionIndex = formattedText.length;
+
+    return TextEditingValue(
+      text: formattedText,
+      selection: TextSelection.collapsed(offset: selectionIndex),
     );
   }
 }
