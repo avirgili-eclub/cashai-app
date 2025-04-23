@@ -6,8 +6,9 @@ import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../../../core/auth/providers/user_session_provider.dart';
-import '../../../dashboard/presentation/controllers/transactions_controller.dart';
 import '../../data/repositories/audio_repository_impl.dart';
+// Add this import to fix the transactionsControllerProvider reference
+import '../../../dashboard/presentation/controllers/transaction_controller.dart';
 
 part 'audio_controller.g.dart';
 

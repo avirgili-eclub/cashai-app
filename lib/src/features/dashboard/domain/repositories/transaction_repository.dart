@@ -10,6 +10,8 @@ abstract class TransactionRepository {
     DateTime? endDate,
     int? limit,
   });
+
+  Future<bool> deleteTransaction(int transactionId);
 }
 
 @riverpod

@@ -9,7 +9,8 @@ import '../../../../core/presentation/widgets/money_text.dart';
 import '../../../../core/utils/money_formatter.dart';
 import '../../../../routing/app_router.dart'; // Add this import for AppRoute
 import '../../domain/entities/recent_transaction.dart';
-import '../controllers/transactions_controller.dart';
+// Update this import to the correct path
+import '../controllers/transaction_controller.dart';
 
 class TransactionsSection extends ConsumerWidget {
   const TransactionsSection({super.key});

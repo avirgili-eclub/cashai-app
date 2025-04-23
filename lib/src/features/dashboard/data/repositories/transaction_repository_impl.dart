@@ -69,6 +69,31 @@ class TransactionRepositoryImpl implements TransactionRepository {
       ];
     }
   }
+
+  @override
+  Future<bool> deleteTransaction(int transactionId) async {
+    developer.log(
+        'Deleting transaction with ID: $transactionId for userId: $userId',
+        name: 'transaction_repository');
+
+    // Early return with error if userId is null or empty
+    if (userId.isEmpty) {
+      developer.log('Empty userId, cannot delete transaction',
+          name: 'transaction_repository');
+      throw Exception('User ID is required to delete a transaction');
+    }
+
+    try {
+      final success = await dataSource.deleteTransaction(transactionId, userId);
+      developer.log('Transaction deletion ${success ? 'successful' : 'failed'}',
+          name: 'transaction_repository');
+      return success;
+    } catch (e, stack) {
+      developer.log('Error deleting transaction: $e',
+          name: 'transaction_repository', error: e, stackTrace: stack);
+      throw Exception('Failed to delete transaction: $e');
+    }
+  }
 }
 
 @Riverpod(keepAlive: true)

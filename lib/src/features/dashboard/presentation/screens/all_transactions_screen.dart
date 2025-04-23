@@ -9,6 +9,7 @@ import '../../../../core/utils/color_utils.dart';
 import '../../../../core/presentation/widgets/money_text.dart';
 import '../../domain/entities/recent_transaction.dart';
 import '../controllers/transaction_controller.dart';
+import '../widgets/dismissible_transaction_item.dart';
 
 // State provider for the transaction filter type
 final transactionFilterTypeProvider = StateProvider<String>((ref) => '');
@@ -308,8 +309,12 @@ class _AllTransactionsScreenState extends ConsumerState<AllTransactionsScreen> {
                   padding: const EdgeInsets.symmetric(horizontal: 16.0),
                   itemCount: filteredTransactions.length,
                   itemBuilder: (context, index) {
-                    return _buildTransactionItem(
-                        context, filteredTransactions[index]);
+                    // Use DismissibleTransactionItem instead of _buildTransactionItem
+                    return DismissibleTransactionItem(
+                      transaction: filteredTransactions[index],
+                      onDeleted: _refreshTransactionsWithDateFilter,
+                      showDate: true,
+                    );
                   },
                 );
               },
@@ -327,97 +332,6 @@ class _AllTransactionsScreenState extends ConsumerState<AllTransactionsScreen> {
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildTransactionItem(
-      BuildContext context, RecentTransaction transaction) {
-    final isDebit = transaction.type == 'DEBITO';
-    final formattedDate = DateFormat('dd MMMM, yyyy').format(transaction.date);
-
-    // Use the EmojiFormatter utility class to handle emoji formatting
-    Widget emojiWidget = EmojiFormatter.emojiToWidget(
-      transaction.emoji,
-      fallbackIcon: Icons.receipt,
-      loggerName: 'all_transactions_screen',
-    );
-
-    // Get color from transaction or use default based on transaction type
-    final Color defaultColor = isDebit
-        ? const Color(0xFFFFCDD2) // Light red for expenses
-        : const Color(0xFFC8E6C9); // Light green for income
-
-    final Color containerColor = ColorUtils.fromHex(
-      transaction.color,
-      defaultColor: defaultColor.withOpacity(0.5),
-      loggerName: 'all_transactions_screen',
-    );
-
-    return GestureDetector(
-      onTap: () {
-        // Navigate to transaction details screen
-        developer.log('Tapped on transaction with ID: ${transaction.id}',
-            name: 'all_transactions_screen');
-        context.pushNamed(
-          'transactionDetails',
-          pathParameters: {'id': transaction.id.toString()},
-          extra: transaction, // Pass the transaction object directly
-        );
-      },
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 8),
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.grey.shade200),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: containerColor,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Center(child: emojiWidget),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    transaction.description,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    formattedDate,
-                    style: const TextStyle(
-                      color: Colors.grey,
-                      fontSize: 12,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            MoneyText(
-              amount: transaction.amount,
-              currency: 'Gs.',
-              isExpense: isDebit,
-              isIncome: !isDebit,
-              showSign: true,
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }
