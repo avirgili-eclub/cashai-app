@@ -6,19 +6,22 @@ import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_doc_scanner/flutter_doc_scanner.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../../../../core/styles/app_styles.dart';
+import '../controllers/invoice_controller.dart';
 
-class ScanTabContent extends StatefulWidget {
+class ScanTabContent extends ConsumerStatefulWidget {
   const ScanTabContent({Key? key}) : super(key: key);
 
   @override
-  State<ScanTabContent> createState() => _ScanTabContentState();
+  ConsumerState<ScanTabContent> createState() => _ScanTabContentState();
 }
 
-class _ScanTabContentState extends State<ScanTabContent>
+class _ScanTabContentState extends ConsumerState<ScanTabContent>
     with WidgetsBindingObserver {
   CameraController? _controller;
   List<CameraDescription>? _cameras;
@@ -718,6 +721,9 @@ class _ScanTabContentState extends State<ScanTabContent>
   }
 
   Widget _buildScannedImagePreview() {
+    final invoiceState = ref.watch(invoiceControllerProvider);
+    final bool isUploading = invoiceState == InvoiceUploadState.uploading;
+
     return Column(
       children: [
         Expanded(
@@ -738,11 +744,13 @@ class _ScanTabContentState extends State<ScanTabContent>
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
               ElevatedButton.icon(
-                onPressed: () {
-                  setState(() {
-                    _scannedImage = null;
-                  });
-                },
+                onPressed: isUploading
+                    ? null
+                    : () {
+                        setState(() {
+                          _scannedImage = null;
+                        });
+                      },
                 icon: const Icon(Icons.refresh),
                 label: const Text('Volver a escanear'),
                 style: ElevatedButton.styleFrom(
@@ -751,16 +759,55 @@ class _ScanTabContentState extends State<ScanTabContent>
                 ),
               ),
               ElevatedButton.icon(
-                onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Procesando imagen...'),
-                      duration: Duration(seconds: 2),
-                    ),
-                  );
-                },
-                icon: const Icon(Icons.check),
-                label: const Text('Continuar'),
+                onPressed: isUploading
+                    ? null
+                    : () async {
+                        if (_scannedImage == null) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                                content: Text('No hay imagen para procesar')),
+                          );
+                          return;
+                        }
+
+                        // Call invoice controller to upload the image
+                        final success = await ref
+                            .read(invoiceControllerProvider.notifier)
+                            .uploadInvoice(invoiceFile: _scannedImage!);
+
+                        if (success) {
+                          if (!mounted) return;
+
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Imagen procesada con éxito'),
+                              backgroundColor: Colors.green,
+                            ),
+                          );
+
+                          // Navigate back to dashboard
+                          context.go('/dashboard');
+                        } else {
+                          if (!mounted) return;
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Error al procesar la imagen'),
+                              backgroundColor: Colors.red,
+                            ),
+                          );
+                        }
+                      },
+                icon: isUploading
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 2,
+                        ),
+                      )
+                    : const Icon(Icons.check),
+                label: Text(isUploading ? 'Procesando...' : 'Continuar'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.green,
                   padding:
