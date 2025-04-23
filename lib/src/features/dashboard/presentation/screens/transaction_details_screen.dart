@@ -31,6 +31,8 @@ class _TransactionDetailsScreenState
   bool _isEditMode = false;
   late TextEditingController notesController;
   late TextEditingController amountController;
+  late TextEditingController
+      titleController; // Added controller for title/description
   late String categoryName;
 
   @override
@@ -48,6 +50,11 @@ class _TransactionDetailsScreenState
         MoneyFormatter.formatAmount(amount).replaceFirst('Gs. ', '');
     amountController = TextEditingController(text: formattedAmount);
 
+    // Initialize title controller with description
+    titleController = TextEditingController(
+      text: widget.transaction?.description ?? '',
+    );
+
     // Store category name
     categoryName = widget.transaction?.categoryName ?? 'Sin categoría';
   }
@@ -56,6 +63,7 @@ class _TransactionDetailsScreenState
   void dispose() {
     notesController.dispose();
     amountController.dispose();
+    titleController.dispose(); // Dispose the title controller
     super.dispose();
   }
 
@@ -66,6 +74,28 @@ class _TransactionDetailsScreenState
   }
 
   Future<void> _saveChanges() async {
+    // Show loading indicator
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Row(
+          children: [
+            SizedBox(
+              height: 20,
+              width: 20,
+              child: CircularProgressIndicator(
+                strokeWidth: 3,
+                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+              ),
+            ),
+            SizedBox(width: 12),
+            Text('Guardando cambios...'),
+          ],
+        ),
+        backgroundColor: Colors.blue,
+        duration: Duration(seconds: 1),
+      ),
+    );
+
     // Parse the formatted amount string back to a number
     double? parsedAmount;
     try {
@@ -81,23 +111,62 @@ class _TransactionDetailsScreenState
       parsedAmount = null;
     }
 
-    // Here we would call the API to save changes
-    developer.log(
-      'Changes to save - Notes: ${notesController.text}, Amount: $parsedAmount',
-      name: 'transaction_details',
-    );
+    if (parsedAmount == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Monto inválido'),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.fixed,
+          duration: Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
 
-    _toggleEditMode();
+    // Get the transaction ID from the widget parameters
+    final transId =
+        int.tryParse(widget.transactionId) ?? widget.transaction?.id ?? -1;
+    if (transId <= 0) {
+      developer.log('Invalid transaction ID: $transId',
+          name: 'transaction_details');
+      return;
+    }
 
-    // Show confirmation snackbar
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Cambios guardados con éxito'),
-        backgroundColor: Colors.green,
-        behavior: SnackBarBehavior.fixed,
-        duration: Duration(seconds: 2),
-      ),
-    );
+    // Call the API to update the transaction including title
+    final success = await ref
+        .read(transactionsControllerProvider.notifier)
+        .updateTransaction(
+          transId,
+          parsedAmount,
+          titleController.text, // Pass title (previous description)
+          notesController.text, // Pass notes (for API description)
+        );
+
+    // Handle the response
+    if (success) {
+      // Exit edit mode
+      _toggleEditMode();
+
+      // Show success message
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Cambios guardados con éxito'),
+          backgroundColor: Colors.green,
+          behavior: SnackBarBehavior.fixed,
+          duration: Duration(seconds: 2),
+        ),
+      );
+    } else {
+      // Show error message
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Error al guardar los cambios'),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.fixed,
+          duration: Duration(seconds: 2),
+        ),
+      );
+    }
   }
 
   @override
@@ -199,6 +268,44 @@ class _TransactionDetailsScreenState
                         ),
                       ],
                     ),
+                    const SizedBox(height: 24),
+
+                    // Description (Title) section - editable or read-only based on mode
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Titulo/Descripción',
+                          style: TextStyle(
+                            color: Colors.grey,
+                            fontSize: 14,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Container(
+                          decoration: BoxDecoration(
+                            border: Border.all(color: Colors.grey.shade300),
+                            borderRadius: BorderRadius.circular(8),
+                            color: _isEditMode
+                                ? Colors.white
+                                : Colors.grey.shade50,
+                          ),
+                          child: TextField(
+                            controller: titleController,
+                            decoration: const InputDecoration(
+                              contentPadding: EdgeInsets.all(16),
+                              border: InputBorder.none,
+                            ),
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            enabled: _isEditMode,
+                          ),
+                        ),
+                      ],
+                    ),
+
                     const SizedBox(height: 24),
 
                     // Amount section - editable or read-only based on mode

@@ -181,6 +181,51 @@ class FirebaseBalanceDataSource {
       throw Exception('Failed to connect to the server: $e');
     }
   }
+
+  Future<bool> updateTransaction(int transactionId, String userId,
+      double amount, String title, String notes) async {
+    final url = '$baseUrl/transactions/$transactionId?userId=$userId';
+    developer.log('Making API request to update transaction: $url',
+        name: 'transactions_datasource');
+
+    try {
+      final Map<String, dynamic> requestBody = {
+        'amount': amount,
+        'title': title,
+      };
+
+      if (notes.isNotEmpty) {
+        requestBody['description'] = notes;
+      }
+
+      final response = await client.patch(
+        Uri.parse(url),
+        headers: {
+          'Content-Type': 'application/json; charset=utf-8',
+          'Accept': 'application/json; charset=utf-8',
+        },
+        body: json.encode(requestBody),
+      );
+
+      developer.log('Update response status code: ${response.statusCode}',
+          name: 'transactions_datasource');
+
+      if (response.statusCode == 200) {
+        final responseBody = json.decode(response.body);
+        developer.log('Update response body: $responseBody',
+            name: 'transactions_datasource');
+        return responseBody['success'] == true;
+      } else {
+        developer.log('Error response: ${response.body}',
+            name: 'transactions_datasource');
+        throw Exception('Failed to update transaction: ${response.statusCode}');
+      }
+    } catch (e, stack) {
+      developer.log('Network error during update: $e',
+          name: 'transactions_datasource', error: e, stackTrace: stack);
+      throw Exception('Failed to connect to the server: $e');
+    }
+  }
 }
 
 @riverpod

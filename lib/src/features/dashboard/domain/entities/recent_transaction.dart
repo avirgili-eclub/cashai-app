@@ -16,6 +16,7 @@ class RecentTransaction {
   final String? color;
   final int? categoryId; // Added new property for category ID
   final String? categoryName; // Added new property for category name
+  final String? title; // Added new property for title
 
   RecentTransaction({
     required this.id,
@@ -34,6 +35,7 @@ class RecentTransaction {
     this.color,
     this.categoryId,
     this.categoryName,
+    this.title,
   });
 
   factory RecentTransaction.fromJson(Map<String, dynamic> json) {
@@ -54,6 +56,7 @@ class RecentTransaction {
       color: json['color'] as String?, // Handle null safely
       categoryId: json['categoryId'] as int?, // Parse category ID
       categoryName: json['categoryName'] as String?, // Parse category name
+      title: json['title'] as String?, // Parse title
     );
   }
 }

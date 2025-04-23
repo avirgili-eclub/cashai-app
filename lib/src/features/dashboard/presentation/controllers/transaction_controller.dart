@@ -4,6 +4,7 @@ import '../../domain/entities/recent_transaction.dart';
 import '../../domain/repositories/transaction_repository.dart';
 import '../../../../core/auth/providers/user_session_provider.dart';
 import '../../../../routing/app_router.dart';
+import '../../data/datasources/firebase_balance_datasource.dart';
 
 part 'transaction_controller.g.dart';
 
@@ -126,6 +127,48 @@ class TransactionsController extends _$TransactionsController {
       return success;
     } catch (e, stack) {
       developer.log('Error deleting transaction: $e',
+          name: 'transactions_controller', error: e, stackTrace: stack);
+      return false;
+    }
+  }
+
+  Future<bool> updateTransaction(
+      int transactionId, double amount, String title, String notes) async {
+    developer.log('Attempting to update transaction with ID: $transactionId',
+        name: 'transactions_controller');
+
+    try {
+      // Check for valid user ID first
+      final userSession = ref.read(userSessionNotifierProvider);
+      if (userSession.userId == null || userSession.isEmpty) {
+        developer.log('No authenticated user found, cannot update transaction',
+            name: 'transactions_controller');
+
+        // Trigger navigation to sign-in page using the router
+        Future.microtask(() {
+          final router = ref.read(goRouterProvider);
+          router.go('/signIn');
+        });
+
+        return false;
+      }
+
+      // Call the dataSource directly for this simple implementation
+      final dataSource = ref.read(balanceDataSourceProvider);
+      final success = await dataSource.updateTransaction(
+          transactionId, userSession.userId!, amount, title, notes);
+
+      if (success) {
+        developer.log('Transaction updated successfully, refreshing data',
+            name: 'transactions_controller');
+
+        // Refresh transactions to get the updated data
+        refreshTransactions();
+      }
+
+      return success;
+    } catch (e, stack) {
+      developer.log('Error updating transaction: $e',
           name: 'transactions_controller', error: e, stackTrace: stack);
       return false;
     }
