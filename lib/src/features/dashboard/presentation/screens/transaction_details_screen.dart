@@ -6,6 +6,7 @@ import '../../../../core/utils/emoji_formatter.dart';
 import '../../../../core/utils/color_utils.dart';
 import '../../../../core/presentation/widgets/money_text.dart';
 import '../../domain/entities/recent_transaction.dart';
+import '../controllers/transaction_controller.dart';
 
 class TransactionDetailsScreen extends ConsumerWidget {
   final String transactionId;
@@ -323,18 +324,67 @@ class TransactionDetailsScreen extends ConsumerWidget {
               },
               child: const Text('Cancelar'),
             ),
-            TextButton(
-              onPressed: () {
-                // Delete logic here
-                developer.log('Confirmed delete transaction',
-                    name: 'transaction_details');
-                Navigator.of(dialogContext).pop(); // Close the dialog
-                context.pop(); // Return to previous screen
+            Consumer(
+              builder: (context, ref, _) {
+                return TextButton(
+                  onPressed: () async {
+                    // Get transaction ID from the transaction object
+                    final transId =
+                        int.tryParse(transactionId) ?? transaction?.id ?? -1;
+
+                    if (transId <= 0) {
+                      developer.log('Invalid transaction ID: $transId',
+                          name: 'transaction_details');
+                      Navigator.of(dialogContext).pop();
+                      context.pop();
+                      return;
+                    }
+
+                    // Call delete transaction from controller
+                    final success = await ref
+                        .read(transactionsControllerProvider.notifier)
+                        .deleteTransaction(transId);
+
+                    // Log result
+                    developer.log(
+                        'Delete transaction result: $success, ID: $transId',
+                        name: 'transaction_details');
+
+                    // Close dialog regardless of result
+                    Navigator.of(dialogContext).pop();
+
+                    // Return to previous screen on success
+                    if (success) {
+                      // Show a snackbar indicating successful deletion with safer floating behavior
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Transacción eliminada con éxito'),
+                          backgroundColor: Colors.green,
+                          behavior: SnackBarBehavior
+                              .fixed, // Use fixed instead of floating
+                          duration: Duration(seconds: 2),
+                        ),
+                      );
+                      context.pop();
+                    } else {
+                      // Show error message if deletion failed
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Error al eliminar la transacción'),
+                          backgroundColor: Colors.red,
+                          behavior: SnackBarBehavior
+                              .fixed, // Use fixed instead of floating
+                          duration: Duration(seconds: 2),
+                        ),
+                      );
+                    }
+                  },
+                  child: const Text(
+                    'Eliminar',
+                    style: TextStyle(color: Colors.red),
+                  ),
+                );
               },
-              child: const Text(
-                'Eliminar',
-                style: TextStyle(color: Colors.red),
-              ),
             ),
           ],
         );
