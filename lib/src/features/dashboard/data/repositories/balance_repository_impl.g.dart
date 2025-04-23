@@ -7,7 +7,7 @@ part of 'balance_repository_impl.dart';
 // **************************************************************************
 
 String _$balanceRepositoryImplHash() =>
-    r'a2a7c672c073c2ea75c792b628cb09acea329600';
+    r'd7d67c0b1548e66def85e1c86d6449b394482bac';
 
 /// See also [balanceRepositoryImpl].
 @ProviderFor(balanceRepositoryImpl)

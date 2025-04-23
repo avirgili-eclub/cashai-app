@@ -2,6 +2,8 @@ import 'dart:developer' as developer;
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../domain/entities/top_category.dart';
 import '../../domain/repositories/balance_repository.dart';
+import '../../../../core/auth/providers/user_session_provider.dart';
+import '../../../../routing/app_router.dart';
 
 part 'categories_controller.g.dart';
 
@@ -11,6 +13,23 @@ Future<List<TopCategory>> categoriesWithLimit(CategoriesWithLimitRef ref,
     {required int? limit}) async {
   developer.log('Fetching categories with limit: $limit',
       name: 'categories_controller');
+
+  // Check for valid user ID first
+  final userSession = ref.read(userSessionNotifierProvider);
+  if (userSession.userId == null || userSession.isEmpty) {
+    developer.log('No authenticated user found, cannot fetch categories',
+        name: 'categories_controller');
+
+    // Trigger navigation to sign-in page using the router
+    Future.microtask(() {
+      final router = ref.read(goRouterProvider);
+      router.go('/signIn');
+    });
+
+    // Return an empty list for unauthenticated users
+    return [];
+  }
+
   final repository = ref.watch(balanceRepositoryProvider);
   try {
     final categories = await repository.getTopCategories(limit: limit);
@@ -37,6 +56,23 @@ class CategoriesController extends _$CategoriesController {
   Future<List<TopCategory>> _fetchTopCategories({int? limit}) async {
     developer.log('Fetching top categories data with limit: $limit',
         name: 'categories_controller');
+
+    // Check for valid user ID first
+    final userSession = ref.read(userSessionNotifierProvider);
+    if (userSession.userId == null || userSession.isEmpty) {
+      developer.log('No authenticated user found, cannot fetch categories',
+          name: 'categories_controller');
+
+      // Trigger navigation to sign-in page using the router
+      Future.microtask(() {
+        final router = ref.read(goRouterProvider);
+        router.go('/signIn');
+      });
+
+      // Return an empty list for unauthenticated users
+      return [];
+    }
+
     final repository = ref.watch(balanceRepositoryProvider);
     try {
       final categories = await repository.getTopCategories(limit: limit);

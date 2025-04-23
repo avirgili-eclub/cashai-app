@@ -7,7 +7,7 @@ part of 'categories_controller.dart';
 // **************************************************************************
 
 String _$categoriesWithLimitHash() =>
-    r'f1096d634cdf03618624eebc2eb18077f00c8b6e';
+    r'abf1750cbfe0bb533dc3ea56e186c7d5b0c07f3c';
 
 /// Copied from Dart SDK
 class _SystemHash {
@@ -163,7 +163,7 @@ class _CategoriesWithLimitProviderElement
 }
 
 String _$categoriesControllerHash() =>
-    r'9e6f1bbf1ed87199a41f1039690b18d6d6560ceb';
+    r'ef4512fcfb38b5a7775de2fa1bf7e69ac8890e1b';
 
 /// See also [CategoriesController].
 @ProviderFor(CategoriesController)

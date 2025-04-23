@@ -1,6 +1,7 @@
 import 'dart:developer' as developer;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart'; // Add this import for navigation
 import '../../domain/entities/balance.dart';
 import '../controllers/balance_controller.dart';
 import '../../../../core/utils/money_formatter.dart';
@@ -79,6 +80,39 @@ class BalanceCard extends ConsumerWidget {
 
   Widget _buildBalanceContent(BuildContext context, Balance balance,
       bool isAmountVisible, WidgetRef ref) {
+    // Handle authentication required case
+    if (balance.isAuthenticationRequired) {
+      return SizedBox(
+        height: 200,
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'Inicie sesión para ver su balance',
+                style:
+                    TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  foregroundColor: Theme.of(context).primaryColor,
+                ),
+                onPressed: () {
+                  // Navigate to sign-in page
+                  context.go('/signIn');
+                },
+                child: const Text('Iniciar Sesión'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    // Continue with regular balance display
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [

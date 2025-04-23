@@ -4,8 +4,13 @@ import 'package:go_router/go_router.dart';
 import 'package:currency_picker/currency_picker.dart';
 import '../../../../core/auth/providers/user_session_provider.dart';
 import '../../../../core/styles/app_styles.dart';
+import '../../../../routing/app_router.dart'; // For goRouterProvider
 import '../../domain/entities/user_subscription_type.dart';
 import '../widgets/editable_field.dart';
+// Add controller imports
+import '../../../dashboard/presentation/controllers/balance_controller.dart';
+import '../../../dashboard/presentation/controllers/categories_controller.dart';
+import '../../../dashboard/presentation/controllers/transaction_controller.dart';
 
 class UserProfileScreen extends ConsumerWidget {
   const UserProfileScreen({Key? key}) : super(key: key);
@@ -666,11 +671,23 @@ class UserProfileScreen extends ConsumerWidget {
             child: const Text('Cancelar'),
           ),
           ElevatedButton(
-            onPressed: () {
-              // Logout logic
-              ref.read(userSessionNotifierProvider.notifier).clearSession();
+            onPressed: () async {
+              // Close the dialog first
               Navigator.pop(context);
-              context.go('/login'); // Navigate to login screen
+              // Invalidate data providers BEFORE clearing session
+              ref.invalidate(balanceControllerProvider);
+              ref.invalidate(categoriesControllerProvider);
+              ref.invalidate(transactionsControllerProvider);
+
+              // Clear the session
+              await ref
+                  .read(userSessionNotifierProvider.notifier)
+                  .clearSession();
+
+              // Navigate to sign-in page
+              if (context.mounted) {
+                context.go('/signIn');
+              }
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.red,

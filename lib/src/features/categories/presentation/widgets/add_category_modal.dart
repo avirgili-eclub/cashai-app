@@ -363,7 +363,7 @@ class _AddCategoryModalState extends ConsumerState<AddCategoryModal> {
       final userSession = ref.read(userSessionNotifierProvider);
       final userId = userSession.userId;
 
-      if (userId.isEmpty) {
+      if (userId == null || userId.isEmpty) {
         throw Exception("Usuario no autenticado");
       }
 

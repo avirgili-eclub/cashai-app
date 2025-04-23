@@ -7,6 +7,7 @@ class Balance {
   final String currency;
   final int month;
   final int year;
+  final bool isAuthenticationRequired; // Add this flag
 
   Balance({
     required this.monthlyIncome,
@@ -17,6 +18,7 @@ class Balance {
     required this.currency,
     required this.month,
     required this.year,
+    this.isAuthenticationRequired = false, // Default to false
   });
 
   factory Balance.fromJson(Map<String, dynamic> json) {

@@ -10,7 +10,8 @@ part 'balance_repository_impl.g.dart';
 
 class BalanceRepositoryImpl implements BalanceRepository {
   final FirebaseBalanceDataSource dataSource;
-  final String userId;
+  final String
+      userId; // Keep this as non-nullable for repository implementation
 
   BalanceRepositoryImpl({required this.dataSource, required this.userId});
 
@@ -99,6 +100,21 @@ BalanceRepository balanceRepositoryImpl(BalanceRepositoryImplRef ref) {
   final dataSource = ref.watch(balanceDataSourceProvider);
   final userSession = ref.watch(userSessionNotifierProvider);
 
+  // Check if user is properly authenticated
+  if (userSession.userId == null || userSession.isEmpty) {
+    // Log the issue
+    developer.log('User not authenticated when creating balance repository',
+        name: 'balance_repository');
+
+    // Return a repository that will throw errors when accessed
+    return BalanceRepositoryImpl(
+      dataSource: dataSource,
+      userId:
+          '', // Empty string that will trigger proper error handling in methods
+    );
+  }
+
+  // User is authenticated, return normal repository
   return BalanceRepositoryImpl(
-      dataSource: dataSource, userId: userSession.userId);
+      dataSource: dataSource, userId: userSession.userId!);
 }

@@ -2,6 +2,8 @@ import 'dart:developer' as developer;
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../domain/entities/balance.dart';
 import '../../domain/repositories/balance_repository.dart';
+import '../../../../core/auth/providers/user_session_provider.dart';
+import '../../../../routing/app_router.dart'; // Add this import for goRouterProvider
 
 part 'balance_controller.g.dart';
 
@@ -15,6 +17,33 @@ class BalanceController extends _$BalanceController {
 
   Future<Balance> _fetchBalance() async {
     developer.log('Fetching balance data', name: 'balance_controller');
+
+    // Check for valid user ID first
+    final userSession = ref.read(userSessionNotifierProvider);
+    if (userSession.userId == null || userSession.isEmpty) {
+      developer.log('No authenticated user found, cannot fetch balance',
+          name: 'balance_controller');
+
+      // Trigger navigation to sign-in page using the router
+      Future.microtask(() {
+        final router = ref.read(goRouterProvider);
+        router.go('/signIn');
+      });
+
+      // Return a special "unauthenticated" balance
+      return Balance(
+        monthlyIncome: 0.0,
+        extraIncome: 0.0,
+        totalIncome: 0.0,
+        expenses: 0.0,
+        totalBalance: 0.0,
+        currency: 'Gs.',
+        month: DateTime.now().month,
+        year: DateTime.now().year,
+        isAuthenticationRequired: true, // Set flag to true
+      );
+    }
+
     final repository = ref.watch(balanceRepositoryProvider);
     try {
       final balance = await repository.getBalance();

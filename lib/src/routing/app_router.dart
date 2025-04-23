@@ -5,10 +5,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:starter_architecture_flutter_firebase/src/features/authentication/data/repositories/auth_repository_impl.dart';
 import 'package:starter_architecture_flutter_firebase/src/features/authentication/presentation/custom_profile_screen.dart';
 import 'package:starter_architecture_flutter_firebase/src/features/authentication/presentation/custom_sign_in_screen.dart';
-// Remove job and entries imports
 import 'package:go_router/go_router.dart';
-import 'package:starter_architecture_flutter_firebase/src/features/onboarding/data/onboarding_repository.dart';
-import 'package:starter_architecture_flutter_firebase/src/features/onboarding/presentation/onboarding_screen.dart';
 import 'package:starter_architecture_flutter_firebase/src/routing/go_router_refresh_stream.dart';
 import 'package:starter_architecture_flutter_firebase/src/routing/jwt_router_refresh_listenable.dart';
 import 'package:starter_architecture_flutter_firebase/src/routing/not_found_screen.dart';
@@ -29,15 +26,13 @@ part 'app_router.g.dart';
 
 // private navigators
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
-// Remove job and entry navigator keys
 final _accountNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'account');
 final _dashboardNavigatorKey =
     GlobalKey<NavigatorState>(debugLabel: 'dashboard');
 
 enum AppRoute {
-  onboarding,
+  // Remove onboarding
   signIn,
-  // Remove job and entry routes
   profile,
   // Finance app routes
   dashboard,
@@ -48,7 +43,7 @@ enum AppRoute {
   addTransaction,
   expenses,
   incomes,
-  userProfile, // Add this entry for the user profile route
+  userProfile,
 }
 
 // Extension to combine multiple refresh sources
@@ -77,33 +72,33 @@ class CombinedListenable extends ChangeNotifier {
   }
 }
 
+// Store the initial route for the app - revert back to StateProvider for simplicity
+final initialRouteProvider = StateProvider<String>((ref) => '/signIn');
+
 @riverpod
 GoRouter goRouter(Ref ref) {
   final authRepository = ref.watch(authRepositoryProvider);
   final userSession = ref.watch(userSessionNotifierProvider);
   final jwtRefreshListenable = ref.watch(jwtAuthRefreshListenableProvider);
 
+  // Get the initial route from initialRoute provider
+  final initialRoute = ref.watch(initialRouteProvider);
+
   return GoRouter(
-    initialLocation: '/signIn',
+    initialLocation: initialRoute,
     navigatorKey: _rootNavigatorKey,
     debugLogDiagnostics: true,
     redirect: (context, state) {
-      final onboardingRepository =
-          ref.read(onboardingRepositoryProvider).requireValue;
-      final didCompleteOnboarding = onboardingRepository.isOnboardingComplete();
+      // Remove onboarding check code
       final path = state.uri.path;
-
-      if (!didCompleteOnboarding) {
-        if (path != '/onboarding') {
-          return '/onboarding';
-        }
-        return null;
-      }
 
       // Check both Firebase auth and JWT token authentication
       final isFirebaseLoggedIn = authRepository.currentUser != null;
-      final hasJwtToken =
-          userSession.token != null && userSession.token!.isNotEmpty;
+      // Check if user session is empty or token is missing
+      final hasJwtToken = userSession.userId != null &&
+          !userSession.isEmpty &&
+          userSession.token != null &&
+          userSession.token!.isNotEmpty;
       final isLoggedIn = isFirebaseLoggedIn || hasJwtToken;
 
       // Log auth state for debugging
@@ -111,13 +106,12 @@ GoRouter goRouter(Ref ref) {
           'Firebase auth: $isFirebaseLoggedIn, JWT auth: $hasJwtToken, path: $path');
 
       if (isLoggedIn) {
-        if (path.startsWith('/onboarding') || path.startsWith('/signIn')) {
+        if (path.startsWith('/signIn')) {
           return '/dashboard'; // Redirect to dashboard when logged in
         }
       } else {
         // Protected routes require authentication
-        if (path.startsWith('/onboarding') ||
-            path.startsWith('/account') ||
+        if (path.startsWith('/account') ||
             path.startsWith('/expenses') ||
             path.startsWith('/incomes') ||
             path.startsWith('/dashboard')) {
@@ -138,13 +132,7 @@ GoRouter goRouter(Ref ref) {
           child: DashboardScreen(),
         ),
       ),
-      GoRoute(
-        path: '/onboarding',
-        name: AppRoute.onboarding.name,
-        pageBuilder: (context, state) => const NoTransitionPage(
-          child: OnboardingScreen(),
-        ),
-      ),
+      // Remove onboarding route
       GoRoute(
         path: '/signIn',
         name: AppRoute.signIn.name,

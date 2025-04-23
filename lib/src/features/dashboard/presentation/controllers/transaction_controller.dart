@@ -2,6 +2,8 @@ import 'dart:developer' as developer;
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../domain/entities/recent_transaction.dart';
 import '../../domain/repositories/transaction_repository.dart';
+import '../../../../core/auth/providers/user_session_provider.dart';
+import '../../../../routing/app_router.dart';
 
 part 'transaction_controller.g.dart';
 
@@ -22,6 +24,23 @@ class TransactionsController extends _$TransactionsController {
     developer.log(
         'Fetching transactions data with date range: ${startDate?.toIso8601String()} to ${endDate?.toIso8601String()}, limit: $limit',
         name: 'transactions_controller');
+
+    // Check for valid user ID first
+    final userSession = ref.read(userSessionNotifierProvider);
+    if (userSession.userId == null || userSession.isEmpty) {
+      developer.log('No authenticated user found, cannot fetch transactions',
+          name: 'transactions_controller');
+
+      // Trigger navigation to sign-in page using the router
+      Future.microtask(() {
+        final router = ref.read(goRouterProvider);
+        router.go('/signIn');
+      });
+
+      // Return an empty list for unauthenticated users
+      return [];
+    }
+
     final repository = ref.watch(transactionRepositoryProvider);
     try {
       final transactions = await repository.getRecentTransactions(

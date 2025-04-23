@@ -1,27 +1,31 @@
+import 'dart:developer' as developer;
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'user_session_provider.g.dart';
 
 class UserSession {
-  final String userId;
+  final String? userId;
   final String? token;
   final String? username;
   final String? email;
 
   UserSession({
-    required this.userId,
+    this.userId,
     this.token,
     this.username,
     this.email,
   });
+
+  // Add isEmpty utility method
+  bool get isEmpty => userId == null || userId!.isEmpty;
 }
 
 @riverpod
 class UserSessionNotifier extends _$UserSessionNotifier {
   @override
   UserSession build() {
-    // Default userId for development/testing
-    return UserSession(userId: '1');
+    // Initialize with empty session instead of default user
+    return UserSession();
   }
 
   void setUserId(String userId) {
@@ -43,8 +47,16 @@ class UserSessionNotifier extends _$UserSessionNotifier {
   }
 
   Future<void> clearSession() async {
-    // Add logic to clear the user session
-    state = UserSession(userId: ''); // Reset the session state
+    // Log session clear
+    developer.log('Clearing user session', name: 'user_session');
+
+    // Completely reset the state with null values
+    state = UserSession(
+      userId: null,
+      token: null,
+      username: null,
+      email: null,
+    );
   }
 
   // Get the authorization header for API requests

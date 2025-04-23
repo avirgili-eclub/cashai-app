@@ -9,7 +9,8 @@ part 'transaction_repository_impl.g.dart';
 
 class TransactionRepositoryImpl implements TransactionRepository {
   final FirebaseBalanceDataSource dataSource;
-  final String userId;
+  final String
+      userId; // Keep this as non-nullable for repository implementation
 
   TransactionRepositoryImpl({required this.dataSource, required this.userId});
 
@@ -21,6 +22,14 @@ class TransactionRepositoryImpl implements TransactionRepository {
   }) async {
     developer.log('Getting recent transactions for userId: $userId',
         name: 'transaction_repository');
+
+    // Early return with empty list if userId is null or empty
+    if (userId.isEmpty) {
+      developer.log('Empty userId, returning empty transaction list',
+          name: 'transaction_repository');
+      return [];
+    }
+
     try {
       final transactions = await dataSource.getRecentTransactions(
         userId,
@@ -68,6 +77,21 @@ TransactionRepository transactionRepositoryImpl(
   final dataSource = ref.watch(balanceDataSourceProvider);
   final userSession = ref.watch(userSessionNotifierProvider);
 
+  // Check if user is properly authenticated
+  if (userSession.userId == null || userSession.isEmpty) {
+    // Log the issue
+    developer.log('User not authenticated when creating transaction repository',
+        name: 'transaction_repository');
+
+    // Return a repository that will throw errors when accessed
+    return TransactionRepositoryImpl(
+      dataSource: dataSource,
+      userId:
+          '', // Empty string that will trigger proper error handling in methods
+    );
+  }
+
+  // User is authenticated, return normal repository
   return TransactionRepositoryImpl(
-      dataSource: dataSource, userId: userSession.userId);
+      dataSource: dataSource, userId: userSession.userId!);
 }

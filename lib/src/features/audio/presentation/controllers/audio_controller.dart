@@ -7,8 +7,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../../../core/auth/providers/user_session_provider.dart';
 import '../../../dashboard/presentation/controllers/transactions_controller.dart';
-import '../../domain/repositories/audio_repository.dart'; // Interface import
-import '../../data/repositories/audio_repository_impl.dart'; // Import implementation instead of provider file
+import '../../data/repositories/audio_repository_impl.dart';
 
 part 'audio_controller.g.dart';
 
@@ -131,8 +130,9 @@ class AudioController extends _$AudioController {
       final userSession = ref.read(userSessionNotifierProvider);
       final userId = userSession.userId;
 
-      if (userId.isEmpty) {
-        developer.log('User ID is empty, cannot upload',
+      // Updated check for nullable userId
+      if (userId == null || userId.isEmpty) {
+        developer.log('User ID is null or empty, cannot upload',
             name: 'audio_controller');
         state = AudioRecordingState.error;
         return;
