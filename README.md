@@ -74,10 +74,20 @@ Obtén un resumen claro de tu situación financiera.
 
 **Roadmap**
 
-- [ ] ...
-- [x] ...
-- [ ] ...
-- [ ] Add localization
+- [ ] Completar UserProfile (CRUD)
+- [x] Vista de transacciones por categoria
+- [ ] Funcionalidad escaneo de tickets/factura. (Captura automatica)
+- [ ] Funcionalidad de reseteo de contrasenha
+- [ ] Pantalla de estadisticas
+- [ ] Creacion de gastos/ingresos recurrentes
+- [ ] Gastos compartidos
+- [ ] Alertas personalizadas
+- [ ] Pantalla creacion de ahorros y metas
+- [ ] Subir Extracto Bancario
+- [ ] Confirmacion de email para habilitar al usuario
+- [ ] Agente IA ChatBot de Finanzas personal
+- [ ] Implementacion de OTP para registro de usuarios
+- [ ] API B2b
 
 > Este es un roadmap tentativo aun.
 
