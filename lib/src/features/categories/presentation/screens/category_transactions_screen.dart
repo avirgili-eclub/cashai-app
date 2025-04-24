@@ -7,10 +7,11 @@ import '../../../../core/utils/emoji_formatter.dart';
 import '../../../../core/utils/color_utils.dart';
 import '../../../../core/utils/date_formatter.dart';
 import '../../../../core/presentation/widgets/money_text.dart';
-// Update import to use TopCategory instead of Category
 import '../../../dashboard/domain/entities/top_category.dart';
+// Import the custom nav bar
+import '../widgets/category_bottom_nav_bar.dart';
 
-class CategoryTransactionsScreen extends ConsumerWidget {
+class CategoryTransactionsScreen extends ConsumerStatefulWidget {
   final String categoryId;
   // Change the type from Category to TopCategory
   final TopCategory? category;
@@ -22,13 +23,24 @@ class CategoryTransactionsScreen extends ConsumerWidget {
   }) : super(key: key);
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<CategoryTransactionsScreen> createState() =>
+      _CategoryTransactionsScreenState();
+}
+
+class _CategoryTransactionsScreenState
+    extends ConsumerState<CategoryTransactionsScreen> {
+  // Current selected month/year text
+  String _selectedPeriod = 'Marzo 2024';
+
+  @override
+  Widget build(BuildContext context) {
     developer.log(
-        'Building CategoryTransactionsScreen for category: $categoryId',
+        'Building CategoryTransactionsScreen for category: ${widget.categoryId}',
         name: 'category_transactions');
 
     // We'll use the passed category or fetch it if not provided
-    final displayCategory = category ?? _getMockTopCategory(categoryId);
+    final displayCategory =
+        widget.category ?? _getMockTopCategory(widget.categoryId);
 
     // Use EmojiFormatter for displaying the category icon
     final Widget categoryIcon = EmojiFormatter.emojiToWidget(
@@ -67,102 +79,45 @@ class CategoryTransactionsScreen extends ConsumerWidget {
           ],
         ),
         actions: [
+          // Fix the + button to make it clearly visible
           IconButton(
-            icon: const Icon(Icons.filter_list),
+            icon: Container(
+              padding: const EdgeInsets.all(4),
+              decoration: BoxDecoration(
+                color: AppStyles.primaryColor.withOpacity(0.2),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.add,
+                color: AppStyles.primaryColor,
+                size: 24,
+              ),
+            ),
             onPressed: () {
-              _showFilterOptions(context);
+              _showTransactionModal(context);
             },
           ),
+          const SizedBox(width: 8),
         ],
       ),
       body: Column(
         children: [
-          // Summary Card
-          _buildSummaryCard(context, displayCategory),
-
-          // Date Range Selector
+          // Date Range Selector with simple month display
           _buildDateRangeSelector(context),
 
-          // Transactions List
+          // Transactions List - now using less space
           Expanded(
             child: _buildTransactionsList(context),
           ),
-        ],
-      ),
-    );
-  }
 
-  // Update summary card method to use TopCategory
-  Widget _buildSummaryCard(BuildContext context, TopCategory category) {
-    return Container(
-      margin: const EdgeInsets.all(16),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            spreadRadius: 1,
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
+          // Total footer - moved inside body column
+          _buildTotalFooter(context, displayCategory),
         ],
       ),
-      child: Column(
-        children: [
-          const Text(
-            'Resumen del Mes',
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 16,
-            ),
-          ),
-          const SizedBox(height: 16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _buildSummaryItem('Total', category.amount, true),
-              _buildSummaryItem('Promedio', category.amount / 4, true),
-              _buildSummaryItem('Transacciones', 12, false, isCount: true),
-            ],
-          ),
-        ],
+      // Use the custom nav bar instead of the standard one
+      bottomNavigationBar: CategoryBottomNavBar(
+        categoryId: widget.categoryId,
       ),
-    );
-  }
-
-  Widget _buildSummaryItem(String label, double value, bool isExpense,
-      {bool isCount = false}) {
-    return Column(
-      children: [
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 14,
-            color: Colors.grey[600],
-          ),
-        ),
-        const SizedBox(height: 8),
-        isCount
-            ? Text(
-                value.toInt().toString(),
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 18,
-                ),
-              )
-            : MoneyText(
-                amount: value,
-                currency: 'Gs.',
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 18,
-                ),
-                isExpense: isExpense,
-                useColors: true,
-              ),
-      ],
     );
   }
 
@@ -172,28 +127,32 @@ class CategoryTransactionsScreen extends ConsumerWidget {
       child: Row(
         children: [
           Expanded(
-            child: Container(
-              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-              decoration: BoxDecoration(
-                color: Colors.grey[200],
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Marzo 2024',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: Colors.grey[800],
+            child: GestureDetector(
+              onTap: () => _showMonthYearPicker(context),
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                decoration: BoxDecoration(
+                  color: Colors.grey[200],
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      _selectedPeriod,
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.grey[800],
+                      ),
                     ),
-                  ),
-                  Icon(
-                    Icons.calendar_today,
-                    size: 16,
-                    color: Colors.grey[700],
-                  ),
-                ],
+                    Icon(
+                      Icons.calendar_today,
+                      size: 16,
+                      color: Colors.grey[700],
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -202,9 +161,48 @@ class CategoryTransactionsScreen extends ConsumerWidget {
     );
   }
 
+  // Add a month/year picker method
+  void _showMonthYearPicker(BuildContext context) async {
+    final months = [
+      'Enero 2024',
+      'Febrero 2024',
+      'Marzo 2024',
+      'Abril 2024',
+      'Mayo 2024',
+      'Junio 2024',
+    ];
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Seleccionar mes'),
+          content: SizedBox(
+            width: double.minPositive,
+            child: ListView.builder(
+              shrinkWrap: true,
+              itemCount: months.length,
+              itemBuilder: (context, index) {
+                return ListTile(
+                  title: Text(months[index]),
+                  onTap: () {
+                    setState(() {
+                      _selectedPeriod = months[index];
+                    });
+                    Navigator.of(context).pop();
+                  },
+                );
+              },
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   Widget _buildTransactionsList(BuildContext context) {
     // Mock transaction data
-    final transactions = _getMockTransactions(categoryId);
+    final transactions = _getMockTransactions(widget.categoryId);
 
     if (transactions.isEmpty) {
       return const Center(
@@ -313,51 +311,163 @@ class CategoryTransactionsScreen extends ConsumerWidget {
     );
   }
 
-  void _showFilterOptions(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder: (context) {
-        return Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Filtrar por',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 18,
-                ),
-              ),
-              const SizedBox(height: 16),
-              _buildFilterOption(context, 'Más reciente', Icons.access_time),
-              _buildFilterOption(context, 'Mayor monto', Icons.arrow_downward),
-              _buildFilterOption(context, 'Menor monto', Icons.arrow_upward),
-              _buildFilterOption(context, 'Por ubicación', Icons.location_on),
-            ],
+  // Update total footer to be more visible
+  Widget _buildTotalFooter(BuildContext context, TopCategory category) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: Colors.grey[50],
+        border: Border(top: BorderSide(color: Colors.grey[200]!)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            spreadRadius: 1,
+            blurRadius: 1,
           ),
-        );
-      },
+        ],
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            'Total en ${category.name}',
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              color: Colors.black,
+            ),
+          ),
+          MoneyText(
+            amount: category.amount,
+            currency: 'Gs.',
+            style: const TextStyle(
+              fontWeight: FontWeight.w600,
+              fontSize: 14,
+            ),
+            isExpense: true,
+            useColors: true,
+          ),
+        ],
+      ),
     );
   }
 
-  Widget _buildFilterOption(BuildContext context, String text, IconData icon) {
+  // Add new method for transaction modal
+  void _showTransactionModal(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+        ),
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Nueva Transacción',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 18,
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.close),
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              '¿Cómo deseas agregar la transacción?',
+              style: TextStyle(color: Colors.grey),
+            ),
+            const SizedBox(height: 24),
+            GridView.count(
+              shrinkWrap: true,
+              crossAxisCount: 2,
+              mainAxisSpacing: 16,
+              crossAxisSpacing: 16,
+              children: [
+                _buildTransactionOption(
+                  context,
+                  title: 'Manual',
+                  icon: Icons.edit,
+                  color: AppStyles.primaryColor.withOpacity(0.1),
+                  iconColor: AppStyles.primaryColor,
+                ),
+                _buildTransactionOption(
+                  context,
+                  title: 'Voz',
+                  icon: Icons.mic,
+                  color: Colors.grey[100]!,
+                ),
+                _buildTransactionOption(
+                  context,
+                  title: 'Cámara',
+                  icon: Icons.camera_alt,
+                  color: Colors.grey[100]!,
+                ),
+                _buildTransactionOption(
+                  context,
+                  title: 'Subir',
+                  icon: Icons.upload_file,
+                  color: Colors.grey[100]!,
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Helper method for transaction options in modal
+  Widget _buildTransactionOption(
+    BuildContext context, {
+    required String title,
+    required IconData icon,
+    required Color color,
+    Color iconColor = Colors.black,
+  }) {
     return InkWell(
       onTap: () {
         Navigator.pop(context);
-        // Apply filter logic
+        // Handle option selection
       },
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        child: Row(
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          border: Border.all(color: Colors.grey[200]!),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, size: 20, color: Colors.grey[700]),
-            const SizedBox(width: 16),
-            Text(text),
+            Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                color: color,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, color: iconColor),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              title,
+              style: const TextStyle(
+                fontWeight: FontWeight.w500,
+              ),
+            ),
           ],
         ),
       ),

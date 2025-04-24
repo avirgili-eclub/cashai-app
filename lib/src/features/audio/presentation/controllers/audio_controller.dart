@@ -99,6 +99,16 @@ class AudioController extends _$AudioController {
   }
 
   Future<void> stopRecordingAndUpload() async {
+    await _stopRecordingAndUpload(null);
+  }
+
+  // Add new method that accepts a categoryId
+  Future<void> stopRecordingAndUploadWithCategoryId(String categoryId) async {
+    await _stopRecordingAndUpload(categoryId);
+  }
+
+  // Common implementation for both upload methods
+  Future<void> _stopRecordingAndUpload(String? categoryId) async {
     if (_audioRecorder == null || !_audioRecorder!.isRecording) {
       developer.log('No active recording to stop', name: 'audio_controller');
       return;
@@ -139,15 +149,22 @@ class AudioController extends _$AudioController {
         return;
       }
 
-      // Upload the file
+      // Upload the file - now with category ID
       final repository = ref.read(audioRepositoryProvider);
       final response = await repository.uploadAudio(
         audioFile: audioFile,
         userId: userId,
+        categoryId: categoryId, // Pass the categoryId if provided
       );
 
       developer.log('Upload completed with response: $response',
           name: 'audio_controller');
+
+      // Log category context if provided
+      if (categoryId != null) {
+        developer.log('Audio uploaded with category context: $categoryId',
+            name: 'audio_controller');
+      }
 
       // Clean up the file
       await audioFile.delete();

@@ -3,7 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../features/audio/presentation/controllers/audio_controller.dart';
 
 class SendAudioButton extends ConsumerStatefulWidget {
-  const SendAudioButton({Key? key}) : super(key: key);
+  // Add parameter for categoryId
+  final String? categoryId;
+
+  const SendAudioButton({Key? key, this.categoryId}) : super(key: key);
 
   @override
   ConsumerState<SendAudioButton> createState() => _SendAudioButtonState();
@@ -63,8 +66,14 @@ class _SendAudioButtonState extends ConsumerState<SendAudioButton>
         setState(() {
           _isRecording = false;
         });
-        // Stop recording and upload
-        ref.read(audioControllerProvider.notifier).stopRecordingAndUpload();
+        // Stop recording and upload with category ID if provided
+        if (widget.categoryId != null) {
+          ref
+              .read(audioControllerProvider.notifier)
+              .stopRecordingAndUploadWithCategoryId(widget.categoryId!);
+        } else {
+          ref.read(audioControllerProvider.notifier).stopRecordingAndUpload();
+        }
       },
       onLongPressCancel: () {
         setState(() {
