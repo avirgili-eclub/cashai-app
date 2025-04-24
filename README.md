@@ -1,4 +1,4 @@
-# 💸 CashAI – Tu Asistente Financiero Inteligente
+# 💸 NUMIA – Tu Asistente Financiero Inteligente
 
 CashAI es una aplicación móvil que revoluciona la gestión de finanzas personales mediante inteligencia artificial. Con CashAI, puedes:
 
