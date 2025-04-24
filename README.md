@@ -1,103 +1,90 @@
-# Time Tracking app with Flutter & Firebase
+# 💸 CashAI – Tu Asistente Financiero Inteligente
 
-A time tracking application built with Flutter & Firebase: 
+CashAI es una aplicación móvil que revoluciona la gestión de finanzas personales mediante inteligencia artificial. Con CashAI, puedes:
 
-![](/.github/images/time-tracker-screenshots.png)
+📸 Escanear tickets y recibos.
 
-This is intended as a **reference app** based on my [Riverpod Architecture](https://codewithandrea.com/articles/flutter-app-architecture-riverpod-introduction/).
+🎙️ Registrar gastos mediante notas de voz.
 
-> **Note**: this project used to be called "Started Architecture for Flutter & Firebase" (based on this [old article](https://codewithandrea.com/videos/starter-architecture-flutter-firebase/)). As of January 2023, it follows my updated [Riverpod Architecture](https://codewithandrea.com/articles/flutter-app-architecture-riverpod-introduction/), using the latest packages.
+📄 Importar extractos bancarios.
 
-## Flutter web preview
+📊 Obtener análisis financieros personalizados.
 
-A Flutter web preview of the app is available here:
+¡Todo desde una sola aplicación intuitiva y segura!
 
-- [Time Tracker | Flutter web demo](https://starter-architecture-flutter.web.app)
 
-## Features
+📱 **Capturas de Pantalla**
 
-- **Simple onboarding page**
-- **Full authentication flow** (using email & password)
-- **Jobs**: users can view, create, edit, and delete their own private jobs (each job has a name and hourly rate)
-- **Entries**: for each job, user can view, create, edit, and delete the corresponding entries (an entry is a task with a start and end time, with an optional comment)
-- **A report page** that shows a daily breakdown of all jobs, hours worked and pay, along with the totals.
+![](https://avirgili-eclub.github.io/cashai-landing/images/app-screenshot.png)
 
-All the data is persisted with Firestore and is kept in sync across multiple devices.
+Pantalla principal de CashAI.
 
-## Roadmap
+![](https://avirgili-eclub.github.io/cashai-landing/images/app-screenshot3.png)
 
-- [ ] Add missing tests
-- [x] Stateful Nested Navigation (available since GoRouter 7.1)
-- [ ] Use controllers / notifiers consistently across the app (some code still needs to be updated)
+Análisis detallado de tus gastos.
+
+![](https://avirgili-eclub.github.io/cashai-landing/images/app-screenshot1.png)
+
+Escanea y registra tus tickets fácilmente.
+
+![](https://avirgili-eclub.github.io/cashai-landing/images/app-screenshot4.png)
+
+Obtén un resumen claro de tu situación financiera.
+
+
+## 🚀 Características Destacadas
+
+    - Procesamiento Inteligente de Tickets: Utiliza OCR y AI para extraer información relevante de tus tickets y recibos.
+
+    - Categorización con IA: Algoritmos avanzados clasifican transacciones, detectan patrones y predicen gastos futuros.
+
+    - Notas de Voz: Registra gastos al instante mediante comandos de voz.
+
+    - Importación de Extractos Bancarios: Conecta tus cuentas bancarias y automatiza la importación de transacciones para una categorización rápida.
+
+    - Análisis Financiero Personalizado: Obtén insights y recomendaciones basadas en tus hábitos de gasto.
+
+    - Chatbot Inteligente: Un asistente de IA ayuda a gestionar finanzas y responde preguntas financieras.
+
+    - Seguridad y Privacidad: Tus datos están protegidos con autenticación segura y encriptación avanzada.
+
+## 🛠️ Tecnologías Utilizadas
+
+    - Framework: Flutter
+
+    - Estado: Riverpod
+
+    - Autenticación: Firebase Auth, Google Auth, Apple Auth, Custom Auth
+
+    - Base de Datos: Cloud Firestore
+
+    - OCR y AI: Integración con servicios de inteligencia artificial
+
+    - Otras: GoRouter, Firebase UI, Shared Preferences, entre otros.
+
+## 📈 Planes de Suscripción
+
+    Plan | Descripción | Precio
+    Free | Acceso limitado a funcionalidades básicas. | Gratis
+    Avanzado | Funcionalidades extendidas y análisis detallados. | $4.99/mes
+    Pro | Todas las funcionalidades sin restricciones. | $9.99/mes
+
+> **Nota**: Precios sujetos a cambios.
+
+
+**Roadmap**
+
+- [ ] ...
+- [x] ...
+- [ ] ...
 - [ ] Add localization
-- [ ] Use the new Firebase UI packages where useful
-- [ ] Responsive UI
 
-> This is a tentative roadmap. There is no ETA for any of the points above. This is a low priority project and I don't have much time to maintain it.
+> Este es un roadmap tentativo aun.
 
-## Relevant Articles
+📥 Instalación
 
-The app is based on my Flutter Riverpod architecture, which is explained in detail here:
+    - Proximamente
 
-- [Flutter App Architecture with Riverpod: An Introduction](https://codewithandrea.com/articles/flutter-app-architecture-riverpod-introduction/)
-- [Flutter Project Structure: Feature-first or Layer-first?](https://codewithandrea.com/articles/flutter-project-structure/)
-- [Flutter App Architecture: The Repository Pattern](https://codewithandrea.com/articles/flutter-repository-pattern/)
-- [How to Build a Robust Flutter App Initialization Flow with Riverpod](https://codewithandrea.com/articles/robust-app-initialization-riverpod/)
+## 📄 Licencia
 
-More more info on Riverpod, read this:
-
-- [Flutter Riverpod 2.0: The Ultimate Guide](https://codewithandrea.com/articles/flutter-state-management-riverpod/)
-
-## Packages in use
-
-These are the main packages used in the app:
-
-- [Flutter Riverpod](https://pub.dev/packages/flutter_riverpod) for data caching, dependency injection, and more
-- [Riverpod Generator](https://pub.dev/packages/riverpod_generator) and [Riverpod Lint](https://pub.dev/packages/riverpod_lint) for the latest Riverpod APIs
-- [GoRouter](https://pub.dev/packages/go_router) for navigation
-- [Firebase Auth](https://pub.dev/packages/firebase_auth) and [Firebase UI Auth](https://pub.dev/packages/firebase_ui_auth) for authentication
-- [Cloud Firestore](https://pub.dev/packages/cloud_firestore) as a realtime database
-- [Firebase UI for Firestore](https://pub.dev/packages/firebase_ui_firestore) for the `FirestoreListView` widget with pagination support
-- [RxDart](https://pub.dev/packages/rxdart) for combining multiple Firestore collections as needed
-- [Intl](https://pub.dev/packages/intl) for currency, date, time formatting
-- [Mocktail](https://pub.dev/packages/mocktail) for testing
-- [Equatable](https://pub.dev/packages/equatable) to reduce boilerplate code in model classes
-
-See the [pubspec.yaml](pubspec.yaml) file for the complete list.
-
-## Running the project with Firebase
-
-To use this project with Firebase, follow these steps:
-
-- Create a new project with the Firebase console
-- Enable Firebase Authentication, along with the Email/Password Authentication Sign-in provider in the Firebase Console (Authentication > Sign-in method > Email/Password > Edit > Enable > Save)
-- Enable Cloud Firestore
-
-Then, follow one of the two approaches below. 👇
-
-### 1. Using the CLI
-
-Make sure you have the Firebase CLI and [FlutterFire CLI](https://pub.dev/packages/flutterfire_cli) installed.
-
-Then run this on the terminal from the root of this project:
-
-- Run `firebase login` so you have access to the Firebase project you have created
-- Run `flutterfire configure` and follow all the steps
-
-For more info, follow this guide:
-
-- [How to add Firebase to a Flutter app with FlutterFire CLI](https://codewithandrea.com/articles/flutter-firebase-flutterfire-cli/)
-
-### 2. Manual way (not recommended)
-
-If you don't want to use FlutterFire CLI, follow these steps instead:
-
-- Register separate iOS, Android, and web apps in the Firebase project settings.
-- On Android, use `com.example.starter_architecture_flutter_firebase` as the package name.
-- then, [download and copy](https://firebase.google.com/docs/flutter/setup#configure_an_android_app) `google-services.json` into `android/app`.
-- On iOS, use `com.example.starterArchitectureFlutterFirebase` as the bundle ID.
-- then, [download and copy](https://firebase.google.com/docs/flutter/setup#configure_an_ios_app) `GoogleService-Info.plist` into `iOS/Runner`, and add it to the Runner target in Xcode.
-
-That's it. Have fun!
-
-## [License: MIT](LICENSE.md)
+    - Proximamente
