@@ -65,8 +65,8 @@ Obtén un resumen claro de tu situación financiera.
 ## 📈 Planes de Suscripción
 
     Plan | Descripción | Precio
-    Free | Acceso limitado a funcionalidades básicas. | Gratis
-    Avanzado | Funcionalidades extendidas y análisis detallados. | $4.99/mes
+    Free | Acceso limitado a funcionalidades | Gratis
+    Avanzado | Funcionalidades extendidas y análisis | $4.99/mes
     Pro | Todas las funcionalidades sin restricciones. | $9.99/mes
 
 > **Nota**: Precios sujetos a cambios.
