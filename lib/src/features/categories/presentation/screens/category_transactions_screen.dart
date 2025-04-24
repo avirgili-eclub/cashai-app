@@ -2,18 +2,21 @@ import 'dart:developer' as developer;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 import '../../../../core/styles/app_styles.dart';
 import '../../../../core/utils/emoji_formatter.dart';
 import '../../../../core/utils/color_utils.dart';
 import '../../../../core/utils/date_formatter.dart';
 import '../../../../core/presentation/widgets/money_text.dart';
 import '../../../dashboard/domain/entities/top_category.dart';
-// Import the custom nav bar
+import '../../../dashboard/domain/entities/recent_transaction.dart';
 import '../widgets/category_bottom_nav_bar.dart';
+import '../controllers/category_transactions_controller.dart';
+import '../../domain/entities/transaction_category_dto.dart';
+import '../../../../core/auth/providers/user_session_provider.dart';
 
 class CategoryTransactionsScreen extends ConsumerStatefulWidget {
   final String categoryId;
-  // Change the type from Category to TopCategory
   final TopCategory? category;
 
   const CategoryTransactionsScreen({
@@ -29,8 +32,19 @@ class CategoryTransactionsScreen extends ConsumerStatefulWidget {
 
 class _CategoryTransactionsScreenState
     extends ConsumerState<CategoryTransactionsScreen> {
-  // Current selected month/year text
-  String _selectedPeriod = 'Marzo 2024';
+  String _selectedPeriod = '';
+  int _selectedMonth = DateTime.now().month;
+  int _selectedYear = DateTime.now().year;
+
+  @override
+  void initState() {
+    super.initState();
+    final now = DateTime.now();
+    _selectedMonth = now.month;
+    _selectedYear = now.year;
+    _selectedPeriod =
+        DateFormat('MMMM yyyy', 'es_ES').format(DateTime(now.year, now.month));
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -38,11 +52,13 @@ class _CategoryTransactionsScreenState
         'Building CategoryTransactionsScreen for category: ${widget.categoryId}',
         name: 'category_transactions');
 
-    // We'll use the passed category or fetch it if not provided
+    final categoryTransactions = ref.watch(
+      categoryTransactionsControllerProvider(widget.categoryId),
+    );
+
     final displayCategory =
         widget.category ?? _getMockTopCategory(widget.categoryId);
 
-    // Use EmojiFormatter for displaying the category icon
     final Widget categoryIcon = EmojiFormatter.emojiToWidget(
       displayCategory.emoji,
       fontSize: 24,
@@ -51,7 +67,6 @@ class _CategoryTransactionsScreenState
       loggerName: 'category_transactions',
     );
 
-    // Parse the color from hex
     final Color categoryColor = ColorUtils.fromHex(
       displayCategory.color,
       defaultColor: const Color(0xFFBBDEFB),
@@ -79,7 +94,6 @@ class _CategoryTransactionsScreenState
           ],
         ),
         actions: [
-          // Fix the + button to make it clearly visible
           IconButton(
             icon: Container(
               padding: const EdgeInsets.all(4),
@@ -102,19 +116,29 @@ class _CategoryTransactionsScreenState
       ),
       body: Column(
         children: [
-          // Date Range Selector with simple month display
           _buildDateRangeSelector(context),
-
-          // Transactions List - now using less space
           Expanded(
-            child: _buildTransactionsList(context),
+            child: categoryTransactions.when(
+              data: (data) =>
+                  _buildTransactionsList(context, data.transactions),
+              error: (error, stack) => Center(
+                child: Text('Error: ${error.toString()}'),
+              ),
+              loading: () => const Center(
+                child: CircularProgressIndicator(),
+              ),
+            ),
           ),
-
-          // Total footer - moved inside body column
-          _buildTotalFooter(context, displayCategory),
+          categoryTransactions.when(
+            data: (data) =>
+                _buildTotalFooter(context, displayCategory, data.totalAmount),
+            error: (_, __) => _buildTotalFooter(
+                context, displayCategory, displayCategory.amount),
+            loading: () => _buildTotalFooter(
+                context, displayCategory, displayCategory.amount),
+          ),
         ],
       ),
-      // Use the custom nav bar instead of the standard one
       bottomNavigationBar: CategoryBottomNavBar(
         categoryId: widget.categoryId,
       ),
@@ -161,16 +185,21 @@ class _CategoryTransactionsScreenState
     );
   }
 
-  // Add a month/year picker method
   void _showMonthYearPicker(BuildContext context) async {
-    final months = [
-      'Enero 2024',
-      'Febrero 2024',
-      'Marzo 2024',
-      'Abril 2024',
-      'Mayo 2024',
-      'Junio 2024',
-    ];
+    final now = DateTime.now();
+    final months = <Map<String, dynamic>>[];
+
+    for (int year = now.year; year >= now.year - 1; year--) {
+      final endMonth = (year == now.year) ? now.month : 12;
+      for (int month = endMonth; month >= 1; month--) {
+        final date = DateTime(year, month);
+        months.add({
+          'display': DateFormat('MMMM yyyy', 'es_ES').format(date),
+          'month': month,
+          'year': year,
+        });
+      }
+    }
 
     showDialog(
       context: context,
@@ -184,11 +213,24 @@ class _CategoryTransactionsScreenState
               itemCount: months.length,
               itemBuilder: (context, index) {
                 return ListTile(
-                  title: Text(months[index]),
+                  title: Text(months[index]['display']),
                   onTap: () {
                     setState(() {
-                      _selectedPeriod = months[index];
+                      _selectedPeriod = months[index]['display'];
+                      _selectedMonth = months[index]['month'];
+                      _selectedYear = months[index]['year'];
                     });
+
+                    ref
+                        .read(categoryTransactionsControllerProvider(
+                                widget.categoryId)
+                            .notifier)
+                        .refreshTransactions(
+                          widget.categoryId,
+                          month: _selectedMonth,
+                          year: _selectedYear,
+                        );
+
                     Navigator.of(context).pop();
                   },
                 );
@@ -200,10 +242,8 @@ class _CategoryTransactionsScreenState
     );
   }
 
-  Widget _buildTransactionsList(BuildContext context) {
-    // Mock transaction data
-    final transactions = _getMockTransactions(widget.categoryId);
-
+  Widget _buildTransactionsList(
+      BuildContext context, List<TransactionCategoryDTO> transactions) {
     if (transactions.isEmpty) {
       return const Center(
         child: Text('No hay transacciones para esta categoría'),
@@ -216,7 +256,6 @@ class _CategoryTransactionsScreenState
       itemBuilder: (context, index) {
         final transaction = transactions[index];
 
-        // Show date header if it's the first item or different from previous
         bool showDateHeader = index == 0 ||
             transactions[index].date.day != transactions[index - 1].date.day;
 
@@ -245,74 +284,98 @@ class _CategoryTransactionsScreenState
     );
   }
 
-  Widget _buildTransactionItem(BuildContext context, Transaction transaction) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200),
-      ),
-      child: Row(
-        children: [
-          // Transaction icon or avatar
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: Colors.grey[200],
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Center(
-              child: Icon(
-                transaction.iconData,
-                color: AppStyles.primaryColor,
+  Widget _buildTransactionItem(
+      BuildContext context, TransactionCategoryDTO transaction) {
+    return InkWell(
+      onTap: () => _navigateToTransactionDetails(context, transaction),
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.grey.shade200),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color:
+                    Colors.grey.shade200, // Changed to non-nullable .shade200
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Center(
+                // Replace the direct Text widget with EmojiFormatter
+                child: EmojiFormatter.emojiToWidget(
+                  transaction.categoryEmoji,
+                  fontSize: 20,
+                  fallbackIcon: Icons.category,
+                  fallbackColor:
+                      Colors.grey.shade600, // Changed to non-nullable .shade600
+                  loggerName: 'category_transactions',
+                ),
               ),
             ),
-          ),
-          const SizedBox(width: 12),
-
-          // Transaction details
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  transaction.description,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w500,
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    transaction.description,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  transaction.location,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey[600],
+                  const SizedBox(height: 4),
+                  Text(
+                    transaction.location ?? 'No location',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey[600],
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-
-          // Transaction amount
-          MoneyText(
-            amount: transaction.amount,
-            currency: 'Gs.',
-            style: const TextStyle(
-              fontWeight: FontWeight.bold,
+            MoneyText(
+              amount: transaction.amount,
+              currency: 'Gs.',
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+              ),
+              isExpense: transaction.type == 'DEBITO',
+              useColors: true,
             ),
-            isExpense: true,
-            useColors: true,
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
-  // Update total footer to be more visible
-  Widget _buildTotalFooter(BuildContext context, TopCategory category) {
+  void _navigateToTransactionDetails(
+      BuildContext context, TransactionCategoryDTO transaction) {
+    final userSession = ref.read(userSessionNotifierProvider);
+    final userId = userSession.userId;
+
+    final recentTransaction = transaction.toRecentTransaction(userId: userId);
+
+    developer.log(
+      'Navigating to transaction details for transaction ID: ${transaction.id} with user ID: ${userId ?? "none"}',
+      name: 'category_transactions',
+    );
+
+    context.push(
+      '/transactions/${transaction.id}',
+      extra: recentTransaction,
+    );
+  }
+
+  Widget _buildTotalFooter(
+      BuildContext context, TopCategory category, double totalAmount) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -339,7 +402,7 @@ class _CategoryTransactionsScreenState
             ),
           ),
           MoneyText(
-            amount: category.amount,
+            amount: totalAmount,
             currency: 'Gs.',
             style: const TextStyle(
               fontWeight: FontWeight.w600,
@@ -353,7 +416,6 @@ class _CategoryTransactionsScreenState
     );
   }
 
-  // Add new method for transaction modal
   void _showTransactionModal(BuildContext context) {
     showModalBottomSheet(
       context: context,
@@ -430,7 +492,6 @@ class _CategoryTransactionsScreenState
     );
   }
 
-  // Helper method for transaction options in modal
   Widget _buildTransactionOption(
     BuildContext context, {
     required String title,
@@ -441,7 +502,6 @@ class _CategoryTransactionsScreenState
     return InkWell(
       onTap: () {
         Navigator.pop(context);
-        // Handle option selection
       },
       child: Container(
         padding: const EdgeInsets.all(16),
@@ -474,7 +534,6 @@ class _CategoryTransactionsScreenState
     );
   }
 
-  // Update mock data method to return TopCategory instead of Category
   TopCategory _getMockTopCategory(String id) {
     final mockCategories = {
       '1': TopCategory(
@@ -528,18 +587,17 @@ class _CategoryTransactionsScreenState
     try {
       idAsInt = int.parse(id);
     } catch (e) {
-      idAsInt = 1; // Default to 1 if parsing fails
+      idAsInt = 1;
     }
 
     return mockCategories['$idAsInt'] ?? mockCategories['1']!;
   }
 
   List<Transaction> _getMockTransactions(String categoryId) {
-    // Generate mock transactions based on category
     final now = DateTime.now();
 
     switch (categoryId) {
-      case '1': // Food & Drink
+      case '1':
         return [
           Transaction(
             id: '101',
@@ -582,7 +640,7 @@ class _CategoryTransactionsScreenState
             iconData: Icons.restaurant,
           ),
         ];
-      case '2': // Transport
+      case '2':
         return [
           Transaction(
             id: '201',
@@ -607,7 +665,6 @@ class _CategoryTransactionsScreenState
   }
 }
 
-// Simple transaction model for the mock data
 class Transaction {
   final String id;
   final String description;
@@ -626,7 +683,6 @@ class Transaction {
   });
 }
 
-// Helper class for date formatting
 class DateFormatter {
   static String formatFullDate(DateTime date) {
     final now = DateTime.now();
@@ -642,7 +698,6 @@ class DateFormatter {
         dateToCheck.day == yesterday.day) {
       return 'Ayer';
     } else {
-      // Format: "Lunes, 15 de Marzo"
       final months = [
         'Enero',
         'Febrero',
@@ -667,7 +722,6 @@ class DateFormatter {
         'Domingo'
       ];
 
-      // Adjust for day of week index (DateTime uses 1-7 where 7 is Sunday)
       final dayIndex = (date.weekday % 7) - 1;
       final dayName = days[dayIndex < 0 ? 6 : dayIndex];
       final monthName = months[date.month - 1];
