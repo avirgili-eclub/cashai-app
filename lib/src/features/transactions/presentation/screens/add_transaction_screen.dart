@@ -6,6 +6,7 @@ import '../../../../core/styles/app_styles.dart';
 import '../widgets/scan_tab_content.dart';
 import '../widgets/manual_tab_content.dart';
 import '../widgets/extract_tab_content.dart';
+import '../widgets/bank_statement_tab_content.dart';
 
 class AddTransactionScreen extends ConsumerStatefulWidget {
   final int initialTabIndex;
@@ -28,7 +29,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
   void initState() {
     super.initState();
     _tabController = TabController(
-      length: 3,
+      length: 4, // Changed from 3 to 4 to include bank statement tab
       vsync: this,
       initialIndex:
           widget.initialTabIndex, // Set initial tab based on parameter
@@ -87,6 +88,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                 Tab(text: 'Escanear'),
                 Tab(text: 'Manual'),
                 Tab(text: 'Extracto'),
+                Tab(text: 'Bank Statement'), // Added new tab
               ],
             ),
           ),
@@ -104,6 +106,9 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
 
                 // Extract Tab Content
                 ExtractTabContent(),
+
+                // Bank Statement Tab Content
+                BankStatementTabContent(), // Added new tab content
               ],
             ),
           ),
