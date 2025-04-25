@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:starter_architecture_flutter_firebase/src/core/utils/money_formatter.dart';
-import 'package:starter_architecture_flutter_firebase/src/core/styles/app_styles.dart';
+import 'package:numia/src/core/utils/money_formatter.dart';
+import 'package:numia/src/core/styles/app_styles.dart';
 
 /// A widget to display formatted money amounts consistently throughout the app
 class MoneyText extends StatelessWidget {

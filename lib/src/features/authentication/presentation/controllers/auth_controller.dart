@@ -1,4 +1,5 @@
 import 'dart:developer' as developer;
+import 'dart:async'; // Add this import for TimeoutException
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../../../core/auth/providers/user_session_provider.dart';
@@ -99,33 +100,56 @@ class AuthController extends StateNotifier<AuthState> {
     try {
       state = state.copyWith(isLoading: true, error: null);
 
-      final response = await _authRepository.login(email, password);
-      developer.log(
-          'Login successful with response keys: ${response.keys.join(", ")}',
-          name: 'auth_controller');
+      // Create a completer to manually handle timeout
+      final completer = Completer<Map<String, dynamic>>();
 
-      // Update user session with the received data
-      if (response.containsKey('userId')) {
-        final userId = response['userId'].toString();
-        final token = response['token']?.toString();
-        final username = response['username']?.toString();
-        final userEmail = response['email']?.toString();
+      // Set up timeout
+      final timer = Timer(const Duration(seconds: 20), () {
+        if (!completer.isCompleted) {
+          completer.completeError(TimeoutException(
+              'Tiempo de espera agotado. Por favor, intente de nuevo más tarde.'));
+        }
+      });
 
-        developer.log(
-            'Setting user session with userId: $userId, token: ${token != null}',
-            name: 'auth_controller');
+      // Make the API call
+      _authRepository.login(email, password).then((response) {
+        if (!completer.isCompleted) {
+          timer.cancel();
 
-        _userSession.setUserSession(
-          userId: userId,
-          token: token,
-          username: username,
-          email: userEmail,
-        );
-      } else {
-        developer.log(
-            'Warning: Response does not contain userId key: $response',
-            name: 'auth_controller');
-      }
+          // Update user session with the received data
+          if (response.containsKey('userId')) {
+            final userId = response['userId'].toString();
+            final token = response['token']?.toString();
+            final username = response['username']?.toString();
+            final userEmail = response['email']?.toString();
+
+            developer.log(
+                'Setting user session with userId: $userId, token: ${token != null}',
+                name: 'auth_controller');
+
+            _userSession.setUserSession(
+              userId: userId,
+              token: token,
+              username: username,
+              email: userEmail,
+            );
+          } else {
+            developer.log(
+                'Warning: Response does not contain userId key: $response',
+                name: 'auth_controller');
+          }
+
+          completer.complete(response);
+        }
+      }).catchError((error) {
+        if (!completer.isCompleted) {
+          timer.cancel();
+          completer.completeError(error);
+        }
+      });
+
+      // Wait for either completion or timeout
+      final response = await completer.future;
 
       state = state.copyWith(
         isLoading: false,

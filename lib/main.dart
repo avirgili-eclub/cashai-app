@@ -4,10 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart'; // Importamos intl para formateo de números
 import 'package:intl/date_symbol_data_local.dart'; // Para inicializar locales
-import 'package:starter_architecture_flutter_firebase/firebase_options.dart';
-import 'package:starter_architecture_flutter_firebase/src/app.dart';
-import 'package:starter_architecture_flutter_firebase/src/core/styles/app_styles.dart';
-import 'package:starter_architecture_flutter_firebase/src/localization/string_hardcoded.dart';
+import 'package:numia/firebase_options.dart';
+import 'package:numia/src/app.dart';
+import 'package:numia/src/core/styles/app_styles.dart';
+import 'package:numia/src/localization/string_hardcoded.dart';
 // ignore:depend_on_referenced_packages
 import 'package:flutter_web_plugins/url_strategy.dart';
 

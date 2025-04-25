@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import 'package:starter_architecture_flutter_firebase/src/constants/app_sizes.dart';
+import 'package:numia/src/constants/app_sizes.dart';
 import 'dart:developer' as developer;
 import 'package:firebase_core/firebase_core.dart';
 import '../core/auth/providers/user_session_provider.dart';

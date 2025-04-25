@@ -2,16 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:riverpod/riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 // Updated import path
-import 'package:starter_architecture_flutter_firebase/src/features/authentication/data/repositories/auth_repository_impl.dart';
-import 'package:starter_architecture_flutter_firebase/src/features/authentication/presentation/custom_profile_screen.dart';
-import 'package:starter_architecture_flutter_firebase/src/features/authentication/presentation/custom_sign_in_screen.dart';
+import 'package:numia/src/features/authentication/data/repositories/auth_repository_impl.dart';
+import 'package:numia/src/features/authentication/presentation/custom_profile_screen.dart';
+import 'package:numia/src/features/authentication/presentation/custom_sign_in_screen.dart';
 import 'package:go_router/go_router.dart';
-import 'package:starter_architecture_flutter_firebase/src/routing/go_router_refresh_stream.dart';
-import 'package:starter_architecture_flutter_firebase/src/routing/jwt_router_refresh_listenable.dart';
-import 'package:starter_architecture_flutter_firebase/src/routing/not_found_screen.dart';
-import 'package:starter_architecture_flutter_firebase/src/routing/scaffold_with_nested_navigation.dart';
+import 'package:numia/src/routing/go_router_refresh_stream.dart';
+import 'package:numia/src/routing/jwt_router_refresh_listenable.dart';
+import 'package:numia/src/routing/not_found_screen.dart';
+import 'package:numia/src/routing/scaffold_with_nested_navigation.dart';
 // Finance app imports
-import 'package:starter_architecture_flutter_firebase/src/features/dashboard/presentation/screens/dashboard_screen.dart';
+import 'package:numia/src/features/dashboard/presentation/screens/dashboard_screen.dart';
 import '../features/categories/presentation/screens/categories_screen.dart';
 import '../features/categories/presentation/screens/category_transactions_screen.dart';
 import '../features/dashboard/domain/entities/recent_transaction.dart';

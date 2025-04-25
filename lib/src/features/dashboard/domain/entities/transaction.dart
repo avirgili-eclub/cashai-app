@@ -1,4 +1,4 @@
-import 'package:starter_architecture_flutter_firebase/src/features/dashboard/domain/enums/transaction_type.dart';
+import 'package:numia/src/features/dashboard/domain/enums/transaction_type.dart';
 
 class Transaction {
   final String id;

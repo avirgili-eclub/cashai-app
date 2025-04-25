@@ -2,9 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:country_code_picker/country_code_picker.dart'; // Add this package
-import 'package:starter_architecture_flutter_firebase/src/constants/app_sizes.dart';
-import 'package:starter_architecture_flutter_firebase/src/core/styles/app_styles.dart';
+import 'package:numia/src/constants/app_sizes.dart';
+import 'package:numia/src/core/styles/app_styles.dart';
 import 'dart:io' show Platform;
+import 'dart:async'; // Add this import for TimeoutException
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_ui_oauth_google/firebase_ui_oauth_google.dart';
 import 'package:firebase_ui_oauth_apple/firebase_ui_oauth_apple.dart';
@@ -77,10 +78,20 @@ class _CustomSignInScreenState extends ConsumerState<CustomSignInScreen> {
         developer.log('Attempting login with email: ${_emailController.text}',
             name: 'custom_sign_in_screen');
 
-        final response = await ref.read(authControllerProvider.notifier).login(
+        // Add timeout to the login request
+        final loginFuture = ref.read(authControllerProvider.notifier).login(
               email: _emailController.text,
               password: _passwordController.text,
             );
+
+        // Wait for the login with a timeout
+        final response = await loginFuture.timeout(
+          const Duration(seconds: 20),
+          onTimeout: () {
+            throw TimeoutException(
+                'La conexión ha tardado demasiado tiempo. Verifique su conexión.');
+          },
+        );
 
         if (context.mounted) {
           if (response != null) {
@@ -138,14 +149,24 @@ class _CustomSignInScreenState extends ConsumerState<CustomSignInScreen> {
         }
       } else {
         // Handle registration with our auth controller including new fields
-        final response =
-            await ref.read(authControllerProvider.notifier).registerUser(
+        // Add timeout to registration request too
+        final registerFuture =
+            ref.read(authControllerProvider.notifier).registerUser(
                   email: _emailController.text,
                   password: _passwordController.text,
                   username: _usernameController.text,
                   celular: '$_selectedCountryDialCode${_phoneController.text}',
                   codigoIdentificador: _selectedCountryCode,
                 );
+
+        // Wait for registration with a timeout
+        final response = await registerFuture.timeout(
+          const Duration(seconds: 20),
+          onTimeout: () {
+            throw TimeoutException(
+                'La conexión ha tardado demasiado tiempo. Por favor intenta de nuevo.');
+          },
+        );
 
         if (context.mounted) {
           if (response != null) {
@@ -175,6 +196,16 @@ class _CustomSignInScreenState extends ConsumerState<CustomSignInScreen> {
             );
           }
         }
+      }
+    } on TimeoutException catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.message ??
+                'La conexión ha tardado demasiado tiempo. Por favor intenta de nuevo.'),
+            backgroundColor: Colors.red,
+          ),
+        );
       }
     } catch (e) {
       if (context.mounted) {
