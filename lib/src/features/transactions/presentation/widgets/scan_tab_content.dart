@@ -11,6 +11,7 @@ import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:disk_space_plus/disk_space_plus.dart'; // Updated import
 import '../../../../core/styles/app_styles.dart';
 import '../controllers/invoice_controller.dart';
 
@@ -30,9 +31,19 @@ class _ScanTabContentState extends ConsumerState<ScanTabContent>
   File? _scannedImage;
   bool _isProcessing = false;
   final FlutterDocScanner _docScanner = FlutterDocScanner();
+  final DiskSpacePlus _diskSpacePlus = DiskSpacePlus(); // Create instance
+
+  // Pre-initialize the image picker
+  final ImagePicker _imagePicker = ImagePicker();
 
   // Tracking scanning folder size and last cleanup time
   DateTime _lastCacheCleanup = DateTime.now();
+
+  // Add flag to track if camera is purposely paused
+  bool _isCameraPaused = false;
+
+  // Add a flag to track if gallery is open
+  bool _isGalleryOpen = false;
 
   @override
   void initState() {
@@ -50,38 +61,52 @@ class _ScanTabContentState extends ConsumerState<ScanTabContent>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    final CameraController? cameraController = _controller;
+    developer.log('App lifecycle state changed to: $state',
+        name: 'scan_tab_content');
 
-    if (cameraController == null || !cameraController.value.isInitialized) {
-      return;
-    }
-
-    if (state == AppLifecycleState.inactive) {
-      cameraController.dispose();
+    if (state == AppLifecycleState.inactive ||
+        state == AppLifecycleState.detached) {
+      _disposeCamera();
     } else if (state == AppLifecycleState.resumed) {
-      _initializeCamera();
+      // Only reinitialize if we're not showing a scanned image
+      // and not purposely paused
+      if (_scannedImage == null && !_isCameraPaused) {
+        _initializeCamera();
+      }
     }
   }
 
   // Función para determinar la resolución óptima basada en las características del dispositivo
   Future<ResolutionPreset> _getOptimalResolutionPreset() async {
-    // Verificamos el espacio disponible para determinar si podemos usar resoluciones altas
-    final directory = await getTemporaryDirectory();
-    final stat = await directory.stat();
-    final freeSpace = stat.size; // Esto es una aproximación
+    try {
+      // Get free disk space in MB using the disk_space_plus package
+      final freeSpace = await _diskSpacePlus.getFreeDiskSpace ??
+          0; // Use instance and handle null
 
-    // Si el dispositivo tiene menos de 100MB libres, usar resolución media
-    if (freeSpace < 100 * 1024 * 1024) {
-      developer.log('Espacio limitado, usando resolución media',
-          name: 'scan_tab_content');
-      return ResolutionPreset.medium;
+      developer.log('Free disk space: $freeSpace MB', name: 'scan_tab_content');
+
+      // If device has less than 100MB free space, use lower resolution
+      if (freeSpace < 20) {
+        developer.log(
+            'Espacio limitado ($freeSpace MB), usando resolución media',
+            name: 'scan_tab_content');
+        return ResolutionPreset.medium;
+      }
+
+      if (freeSpace < 50) {
+        developer.log(
+            'Espacio limitado ($freeSpace MB), usando resolución alta',
+            name: 'scan_tab_content');
+        return ResolutionPreset.high;
+      }
+
+      // Default to higher resolution when enough space is available
+      return ResolutionPreset.veryHigh;
+    } catch (e) {
+      developer.log('Error checking disk space: $e', name: 'scan_tab_content');
+      // Default to medium resolution if we can't check space
+      return ResolutionPreset.high;
     }
-
-    // También podríamos verificar la memoria RAM disponible, pero eso requiere plugins adicionales
-
-    // Por ahora usamos high como un buen balance entre calidad y rendimiento
-    // En lugar de max que podría ser problemático en dispositivos de gama baja
-    return ResolutionPreset.high;
   }
 
   // Limpiar archivos temporales de escaneo más antiguos que una semana
@@ -197,6 +222,40 @@ class _ScanTabContentState extends ConsumerState<ScanTabContent>
     }
   }
 
+  // Add a method to properly dispose the camera
+  Future<void> _disposeCamera() async {
+    developer.log('Disposing camera controller', name: 'scan_tab_content');
+    if (_controller != null && _controller!.value.isInitialized) {
+      await _controller!.dispose();
+      _controller = null;
+
+      if (mounted) {
+        setState(() {
+          _isCameraInitialized = false;
+        });
+      }
+    }
+  }
+
+  // Add method to pause camera without disposing
+  void _pauseCamera() {
+    _isCameraPaused = true;
+    _isGalleryOpen = true; // Set flag indicating gallery is open
+    developer.log('Pausing camera', name: 'scan_tab_content');
+    // Camera operations will continue in the background but we won't use it
+  }
+
+  // Add method to resume camera if it was paused
+  void _resumeCamera() {
+    if (_isCameraPaused) {
+      _isCameraPaused = false;
+      _isGalleryOpen = false; // Reset gallery flag
+      developer.log('Resuming camera', name: 'scan_tab_content');
+      // No need to reinitialize, just allow the app to use the camera again
+      setState(() {});
+    }
+  }
+
   Future<void> _scanDocument() async {
     developer.log('_scanDocument method started', name: 'scan_tab_content');
     if (_isProcessing) {
@@ -210,16 +269,28 @@ class _ScanTabContentState extends ConsumerState<ScanTabContent>
     });
     developer.log('_isProcessing set to true', name: 'scan_tab_content');
 
-// Añadir un timeout para evitar quedarse en estado de carga indefinidamente
-    developer.log('Setting up timeout timer', name: 'scan_tab_content');
-    Timer timeout = Timer(const Duration(seconds: 20), () async {
-      developer.log('Timeout timer triggered after 20 seconds',
+    try {
+      developer.log('Attempting to scan document with _docScanner',
           name: 'scan_tab_content');
-      if (_isProcessing && mounted) {
-        developer.log('Timeout ocurred, falling back to manual capture',
-            name: 'scan_tab_content');
 
-        // Informar al usuario
+      // Use the document scanner with explicit page parameter and timeout
+      List<String>? scannedDocuments;
+      try {
+        developer.log('Calling getScannedDocumentAsImages(page: 1)',
+            name: 'scan_tab_content');
+        scannedDocuments = await _docScanner
+            .getScannedDocumentAsImages(page: 1)
+            .timeout(const Duration(seconds: 8), onTimeout: () {
+          throw TimeoutException('El escaneo automático tomó demasiado tiempo');
+        });
+
+        developer.log(
+            'getScannedDocumentAsImages() completed. Results: ${scannedDocuments?.length ?? 0} documents',
+            name: 'scan_tab_content');
+      } on TimeoutException catch (e) {
+        developer.log('Timeout exception in document scanning: $e',
+            name: 'scan_tab_content', error: e);
+
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -231,24 +302,9 @@ class _ScanTabContentState extends ConsumerState<ScanTabContent>
           );
         }
 
-        // Ejecutar captura manual como fallback
+        // Utilizar el método de captura manual en caso de timeout
         await _captureManualImage();
-      }
-    });
-
-    try {
-      developer.log('Attempting to scan document with _docScanner',
-          name: 'scan_tab_content');
-      // Use the document scanner directly - this will open the native scanner UI
-      // which handles edge detection and automatic capture
-      List<String>? scannedDocuments;
-      try {
-        developer.log('Calling getScannedDocumentAsImages()',
-            name: 'scan_tab_content');
-        scannedDocuments = await _docScanner.getScannedDocumentAsImages();
-        developer.log(
-            'getScannedDocumentAsImages() completed. Results: ${scannedDocuments?.length ?? 0} documents',
-            name: 'scan_tab_content');
+        return;
       } on PlatformException catch (e) {
         developer.log(
             'Platform exception in document scanning: ${e.code}, ${e.message}',
@@ -257,10 +313,6 @@ class _ScanTabContentState extends ConsumerState<ScanTabContent>
 
         // Utilizar el método de captura manual
         await _captureManualImage();
-
-        // Cancelar el timeout después de la captura manual
-        timeout.cancel();
-        developer.log('Timeout timer cancelled', name: 'scan_tab_content');
         return;
       }
 
@@ -291,21 +343,8 @@ class _ScanTabContentState extends ConsumerState<ScanTabContent>
           );
         }
       } else {
-        developer.log('No documents returned from scanner',
-            name: 'scan_tab_content');
-        setState(() {
-          _isProcessing = false;
-        });
-
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Escaneo cancelado o no se detectó documento'),
-              backgroundColor: Colors.orange,
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
-        }
+        // Use the dedicated cancellation handler
+        _handleScanCancellation();
       }
     } catch (e) {
       developer.log('Unhandled error scanning document: $e',
@@ -323,30 +362,32 @@ class _ScanTabContentState extends ConsumerState<ScanTabContent>
           ),
         );
       }
-    } finally {
-      timeout.cancel();
-      developer.log('Timeout timer cancelled in finally block',
-          name: 'scan_tab_content');
-      developer.log('_scanDocument method completed', name: 'scan_tab_content');
     }
+
+    developer.log('_scanDocument method completed', name: 'scan_tab_content');
   }
 
   Future<void> _pickImageFromGallery() async {
-    final ImagePicker picker = ImagePicker();
-    final XFile? image = await picker.pickImage(
-      source: ImageSource.gallery,
-      // Limitar el tamaño máximo de la imagen seleccionada
-      maxWidth: 1200,
-      maxHeight: 1600,
-    );
+    // First update UI immediately to show gallery placeholder
+    setState(() {
+      _isGalleryOpen = true;
+      _isProcessing = true;
+    });
 
-    if (image != null) {
-      setState(() {
-        _isProcessing = true;
-      });
+    // Pause camera
+    _pauseCamera();
 
-      try {
-        // Guardar en nuestro directorio de caché
+    try {
+      // Use the pre-initialized image picker
+      final XFile? image = await _imagePicker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 1200,
+        maxHeight: 1600,
+        imageQuality: 85,
+      );
+
+      if (image != null) {
+        // If image selected, save it and show it
         final savedPath = await _saveImageToScanCache(File(image.path));
 
         setState(() {
@@ -363,9 +404,10 @@ class _ScanTabContentState extends ConsumerState<ScanTabContent>
             ),
           );
         }
-      } catch (e) {
-        developer.log('Error processing gallery image: $e',
-            name: 'scan_tab_content', error: e);
+      } else {
+        // If no image selected, resume the camera
+        _resumeCamera();
+
         setState(() {
           _isProcessing = false;
         });
@@ -373,12 +415,31 @@ class _ScanTabContentState extends ConsumerState<ScanTabContent>
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Error al procesar la imagen. Intenta de nuevo.'),
-              backgroundColor: Colors.red,
+              content: Text('No se seleccionó ninguna imagen'),
               behavior: SnackBarBehavior.floating,
             ),
           );
         }
+      }
+    } catch (e) {
+      developer.log('Error processing gallery image: $e',
+          name: 'scan_tab_content', error: e);
+
+      // Resume camera on error
+      _resumeCamera();
+
+      setState(() {
+        _isProcessing = false;
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Error al procesar la imagen. Intenta de nuevo.'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
       }
     }
   }
@@ -455,6 +516,23 @@ class _ScanTabContentState extends ConsumerState<ScanTabContent>
     }
   }
 
+  // Add this new method for handling scan cancellations
+  void _handleScanCancellation() {
+    developer.log('Escaneo cancelado por el usuario', name: 'scan_tab_content');
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Escaneo cancelado por el usuario'),
+          backgroundColor: Colors.orange,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+    setState(() {
+      _isProcessing = false;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_isPermissionDenied) {
@@ -465,11 +543,64 @@ class _ScanTabContentState extends ConsumerState<ScanTabContent>
       return _buildScannedImagePreview();
     }
 
+    // Show gallery placeholder when gallery is open
+    if (_isGalleryOpen) {
+      return _buildGalleryPlaceholderUI();
+    }
+
+    // Only show loading UI when camera is initializing
     if (!_isCameraInitialized || _controller == null) {
       return _buildLoadingUI();
     }
 
+    // Don't try to build camera UI if it's paused
+    if (_isCameraPaused) {
+      return _buildGalleryPlaceholderUI();
+    }
+
     return _buildCameraUI();
+  }
+
+  // Add a new method for gallery placeholder UI
+  Widget _buildGalleryPlaceholderUI() {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Expanded(
+          child: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.photo_library_outlined,
+                  size: 80,
+                  color: Colors.grey[400],
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Selecciona una imagen de la galería',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.grey[600],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+
+        // Keep the bottom controls visible even when gallery is open
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+          child: Text(
+            'Selecciona una imagen o cierra la galería para volver a la cámara',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: Colors.grey[600]),
+          ),
+        ),
+      ],
+    );
   }
 
   Widget _buildPermissionDeniedUI() {
@@ -520,6 +651,26 @@ class _ScanTabContentState extends ConsumerState<ScanTabContent>
   }
 
   Widget _buildCameraUI() {
+    // Safety check to prevent rebuilding with disposed camera controller
+    if (_controller == null || !_controller!.value.isInitialized) {
+      // If controller exists but isn't initialized, try initializing it
+      if (_controller != null) {
+        _initializeCamera();
+      }
+
+      // Show loading UI while waiting for camera
+      return const Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(height: 16.0),
+            Text('Inicializando cámara...'),
+          ],
+        ),
+      );
+    }
+
     return Column(
       children: [
         Expanded(

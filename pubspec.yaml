@@ -43,6 +43,8 @@ dependencies:
   flutter_doc_scanner: ^0.0.16
   # Add country code picker
   country_code_picker: ^3.0.0
+  # Add disk space package for storage management
+  disk_space_plus: ^0.2.5
 
 dev_dependencies:
   flutter_test:
