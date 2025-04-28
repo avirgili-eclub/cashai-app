@@ -476,83 +476,78 @@ class UserProfileScreen extends ConsumerWidget {
                             ValueListenableBuilder(
                               valueListenable: selectedCurrency,
                               builder: (context, currency, _) {
-                                return InkWell(
-                                  onTap: () {
-                                    showCurrencyPicker(
-                                      context: context,
-                                      showFlag: true,
-                                      showCurrencyName: true,
-                                      showCurrencyCode: true,
-                                      onSelect: (Currency currency) {
-                                        selectedCurrency.value = currency;
-                                        // Update currency through controller
-                                        ref
-                                            .read(userProfileControllerProvider
-                                                .notifier)
-                                            .updateUserProfile({
-                                          'principalCurrency': {
-                                            'code': currency.code,
-                                            'symbol': currency.symbol,
-                                            'name': currency.name
-                                          }
-                                        });
-                                      },
-                                      favorite: [
-                                        'PYG',
-                                        'USD',
-                                        'EUR',
-                                        'BRL',
-                                        'ARS'
-                                      ],
-                                    );
-                                  },
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 16, vertical: 12),
-                                    decoration: BoxDecoration(
-                                      border: Border.all(
-                                          color: Colors.grey.shade300),
-                                      borderRadius: BorderRadius.circular(8),
+                                return Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    // Disabled currency display container
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 16, vertical: 12),
+                                      decoration: BoxDecoration(
+                                        border: Border.all(
+                                            color: Colors.grey.shade300),
+                                        borderRadius: BorderRadius.circular(8),
+                                        color: Colors.grey
+                                            .shade100, // Gray background to look disabled
+                                      ),
+                                      child: Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          Row(
+                                            children: [
+                                              Text(
+                                                CurrencyUtils.currencyToEmoji(
+                                                    currency),
+                                                style: const TextStyle(
+                                                    fontSize: 24),
+                                              ),
+                                              const SizedBox(width: 12),
+                                              Column(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                children: [
+                                                  Text(
+                                                    currency.name,
+                                                    style: TextStyle(
+                                                      fontSize: 16,
+                                                      fontWeight:
+                                                          FontWeight.w500,
+                                                      color: Colors.grey
+                                                          .shade600, // Dimmed color
+                                                    ),
+                                                  ),
+                                                  Text(
+                                                    currency.code,
+                                                    style: TextStyle(
+                                                      fontSize: 14,
+                                                      color:
+                                                          Colors.grey.shade500,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ],
+                                          ),
+                                          Icon(Icons.arrow_drop_down,
+                                              color: Colors.grey.shade400),
+                                        ],
+                                      ),
                                     ),
-                                    child: Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        Row(
-                                          children: [
-                                            Text(
-                                              CurrencyUtils.currencyToEmoji(
-                                                  currency),
-                                              style:
-                                                  const TextStyle(fontSize: 24),
-                                            ),
-                                            const SizedBox(width: 12),
-                                            Column(
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.start,
-                                              children: [
-                                                Text(
-                                                  currency.name,
-                                                  style: const TextStyle(
-                                                    fontSize: 16,
-                                                    fontWeight: FontWeight.w500,
-                                                  ),
-                                                ),
-                                                Text(
-                                                  currency.code,
-                                                  style: TextStyle(
-                                                    fontSize: 14,
-                                                    color: Colors.grey.shade600,
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          ],
+                                    // Note about future feature
+                                    Padding(
+                                      padding: const EdgeInsets.only(
+                                          top: 4, left: 4),
+                                      child: Text(
+                                        "Proximamente podrá seleccionar múltiples monedas",
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          fontStyle: FontStyle.italic,
+                                          color: Colors.grey.shade600,
                                         ),
-                                        const Icon(Icons.arrow_drop_down),
-                                      ],
+                                      ),
                                     ),
-                                  ),
+                                  ],
                                 );
                               },
                             ),
