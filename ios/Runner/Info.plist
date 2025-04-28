@@ -5,7 +5,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>Starter Architecture Flutter Firebase</string>
+	<string>NUMIA Your personal finance assistant app</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -13,7 +13,7 @@
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
-	<string>starter_architecture_flutter_firebase</string>
+	<string>NUMIA</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
@@ -49,7 +49,7 @@
 	<true/>
 	<!-- Add these keys for microphone permissions -->
     <key>NSMicrophoneUsageDescription</key>
-    <string>We need access to your microphone to record audio messages</string>
+    <string>Necesitamos acceso a tu micrófono para grabar los mensajes de audio.</string>
 	<key>UIBackgroundModes</key>
 	<array>
     	<string>audio</string>
@@ -58,6 +58,12 @@
     <string>Necesitamos acceso a tu cámara para escanear tickets y facturas</string>
     <key>NSPhotoLibraryUsageDescription</key>
     <string>Necesitamos acceso a tus fotos para guardar los tickets escaneados</string>
+	<key>NSFaceIDUsageDescription</key>
+	<string>Autenticación biométrica para un acceso seguro a la aplicación</string>
+	<key>UIFileSharingEnabled</key>
+	<true/>
+	<key>LSSupportsOpeningDocumentsInPlace</key>
+	<true/>
 	
 	<!-- Add this section for Apple Sign In -->
     <key>CFBundleURLTypes</key>
@@ -68,15 +74,17 @@
             <key>CFBundleURLSchemes</key>
             <array>
                 <!-- Your app's Firebase URL scheme will be here -->
-                <string>your.app.bundle.id</string>
+                <string>com.virtech.numia</string>
             </array>
         </dict>
     </array>
     
     <!-- Also add capability -->
+	<!-- 
     <key>com.apple.developer.applesignin</key>
     <array>
         <string>Default</string>
     </array>
+	-->
 </dict>
 </plist>

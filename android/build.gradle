@@ -36,5 +36,7 @@ buildscript {
     dependencies {
         classpath 'com.android.tools.build:gradle:7.3.0'
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+        // Add Firebase App Distribution plugin
+        classpath 'com.google.firebase:firebase-appdistribution-gradle:3.0.1'
     }
 }

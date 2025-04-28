@@ -28,7 +28,7 @@ class DashboardScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Cash AI'),
+        title: const Text('Numia'),
         backgroundColor: AppStyles.primaryColor,
         foregroundColor: Colors.white,
         // Move profile icon to the leading position
