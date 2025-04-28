@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:month_picker_dialog/month_picker_dialog.dart';
 import '../../../../core/styles/app_styles.dart';
 import '../../../../core/utils/emoji_formatter.dart';
 import '../../../../core/utils/color_utils.dart';
@@ -96,14 +97,22 @@ class _CategoryTransactionsScreenState
         actions: [
           IconButton(
             icon: Container(
-              padding: const EdgeInsets.all(4),
+              padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: AppStyles.primaryColor.withOpacity(0.2),
+                color: AppStyles.primaryColor.withOpacity(0.8),
                 shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: AppStyles.primaryColor.withOpacity(0.3),
+                    spreadRadius: 1,
+                    blurRadius: 2,
+                    offset: const Offset(0, 1),
+                  ),
+                ],
               ),
               child: const Icon(
                 Icons.add,
-                color: AppStyles.primaryColor,
+                color: Colors.white,
                 size: 24,
               ),
             ),
@@ -155,10 +164,20 @@ class _CategoryTransactionsScreenState
               onTap: () => _showMonthYearPicker(context),
               child: Container(
                 padding:
-                    const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                    const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                 decoration: BoxDecoration(
-                  color: Colors.grey[200],
+                  color: Colors.white,
                   borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                      color: AppStyles.primaryColor.withOpacity(0.5)),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.grey.withOpacity(0.1),
+                      spreadRadius: 1,
+                      blurRadius: 2,
+                      offset: const Offset(0, 1),
+                    ),
+                  ],
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -167,13 +186,21 @@ class _CategoryTransactionsScreenState
                       _selectedPeriod,
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
-                        color: Colors.grey[800],
+                        fontSize: 15,
+                        color: AppStyles.primaryTextColor,
                       ),
                     ),
-                    Icon(
-                      Icons.calendar_today,
-                      size: 16,
-                      color: Colors.grey[700],
+                    Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: AppStyles.primaryColor.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Icon(
+                        Icons.calendar_today_rounded,
+                        size: 18,
+                        color: AppStyles.primaryColor,
+                      ),
                     ),
                   ],
                 ),
@@ -185,61 +212,131 @@ class _CategoryTransactionsScreenState
     );
   }
 
-  void _showMonthYearPicker(BuildContext context) async {
+  Future<void> _showMonthYearPicker(BuildContext context) async {
     final now = DateTime.now();
-    final months = <Map<String, dynamic>>[];
+    final initialDate = DateTime(_selectedYear, _selectedMonth);
+    final firstDate = DateTime(now.year - 2, 1); // 2 years back
+    final lastDate = DateTime(now.year, now.month); // Up to current month
 
-    for (int year = now.year; year >= now.year - 1; year--) {
-      final endMonth = (year == now.year) ? now.month : 12;
-      for (int month = endMonth; month >= 1; month--) {
-        final date = DateTime(year, month);
-        months.add({
-          'display': DateFormat('MMMM yyyy', 'es_ES').format(date),
-          'month': month,
-          'year': year,
-        });
-      }
-    }
+    try {
+      // Get the current theme and only override what we need
+      final baseTheme = Theme.of(context);
 
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Seleccionar mes'),
-          content: SizedBox(
-            width: double.minPositive,
-            child: ListView.builder(
-              shrinkWrap: true,
-              itemCount: months.length,
-              itemBuilder: (context, index) {
-                return ListTile(
-                  title: Text(months[index]['display']),
-                  onTap: () {
-                    setState(() {
-                      _selectedPeriod = months[index]['display'];
-                      _selectedMonth = months[index]['month'];
-                      _selectedYear = months[index]['year'];
-                    });
-
-                    ref
-                        .read(categoryTransactionsControllerProvider(
-                                widget.categoryId)
-                            .notifier)
-                        .refreshTransactions(
-                          widget.categoryId,
-                          month: _selectedMonth,
-                          year: _selectedYear,
-                        );
-
-                    Navigator.of(context).pop();
-                  },
-                );
-              },
+      // Use the themed context for the dialog
+      final selectedDate = await showMonthPicker(
+        context: context,
+        initialDate: initialDate,
+        firstDate: firstDate,
+        lastDate: lastDate,
+        monthPickerDialogSettings: MonthPickerDialogSettings(
+          // Dialog settings for locale and background color
+          dialogSettings: PickerDialogSettings(
+            dialogBackgroundColor: Colors.white,
+            locale: const Locale('es', 'ES'),
+            dialogRoundedCornersRadius: 12,
+            // Add a subtle border to create shadow effect
+            dialogBorderSide: BorderSide(
+              color: Colors.grey.shade300,
+              width: 0.5,
+            ),
+            // Add some inset padding to create space around the dialog
+            insetPadding:
+                const EdgeInsets.symmetric(horizontal: 40, vertical: 24),
+          ),
+          // Enhanced header settings with improved styling
+          headerSettings: PickerHeaderSettings(
+            // Add background color that slightly contrasts with dialog background
+            headerBackgroundColor: Colors.grey.shade50,
+            // Improve current page text style
+            headerCurrentPageTextStyle: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 20,
+              color: AppStyles.primaryTextColor,
+            ),
+            // Customize header icons for better visibility
+            headerIconsSize: 24.0,
+            headerIconsColor: AppStyles.primaryColor,
+            // Add padding around header elements
+            headerPadding: const EdgeInsets.all(20.0),
+            // Use different icons that match app style better
+            previousIcon: Icons.chevron_left,
+            nextIcon: Icons.chevron_right,
+          ),
+          // Action bar settings with widgets
+          actionBarSettings: PickerActionBarSettings(
+            confirmWidget: Text(
+              'Confirmar',
+              style: TextStyle(
+                color: AppStyles.primaryColor,
+                fontWeight: FontWeight.w600,
+                fontSize: 16,
+              ),
+            ),
+            cancelWidget: Text(
+              'Cancelar',
+              style: TextStyle(
+                color: AppStyles.primaryColor,
+                fontWeight: FontWeight.w600,
+                fontSize: 16,
+              ),
             ),
           ),
+          // Date button settings with app style colors for consistency
+          dateButtonsSettings: PickerDateButtonsSettings(
+            selectedMonthBackgroundColor: AppStyles.primaryColor,
+            selectedMonthTextColor: Colors.white,
+            currentMonthTextColor: AppStyles.primaryTextColor,
+            unselectedMonthsTextColor: AppStyles.secondaryTextColor,
+            monthTextStyle: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+            ),
+            selectedDateRadius: 8.0,
+          ),
+        ),
+      );
+
+      if (selectedDate != null && mounted) {
+        setState(() {
+          _selectedMonth = selectedDate.month;
+          _selectedYear = selectedDate.year;
+          _selectedPeriod = DateFormat('MMMM yyyy', 'es_ES')
+              .format(DateTime(_selectedYear, _selectedMonth));
+        });
+
+        // Refresh transactions with the new month and year
+        await ref
+            .read(categoryTransactionsControllerProvider(widget.categoryId)
+                .notifier)
+            .refreshTransactions(
+              widget.categoryId,
+              month: _selectedMonth,
+              year: _selectedYear,
+            );
+
+        developer.log(
+          'Month selected: $_selectedPeriod',
+          name: 'category_transactions',
         );
-      },
-    );
+      } else {
+        developer.log(
+          'No month selected or dialog cancelled',
+          name: 'category_transactions',
+        );
+      }
+    } catch (e, stackTrace) {
+      developer.log(
+        'Error showing month picker: $e',
+        name: 'category_transactions',
+        error: e,
+        stackTrace: stackTrace,
+      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error al seleccionar el mes: $e')),
+        );
+      }
+    }
   }
 
   Widget _buildTransactionsList(
@@ -303,18 +400,15 @@ class _CategoryTransactionsScreenState
               width: 40,
               height: 40,
               decoration: BoxDecoration(
-                color:
-                    Colors.grey.shade200, // Changed to non-nullable .shade200
+                color: Colors.grey.shade200,
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Center(
-                // Replace the direct Text widget with EmojiFormatter
                 child: EmojiFormatter.emojiToWidget(
                   transaction.categoryEmoji,
                   fontSize: 20,
                   fallbackIcon: Icons.category,
-                  fallbackColor:
-                      Colors.grey.shade600, // Changed to non-nullable .shade600
+                  fallbackColor: Colors.grey.shade600,
                   loggerName: 'category_transactions',
                 ),
               ),
@@ -405,7 +499,7 @@ class _CategoryTransactionsScreenState
             amount: totalAmount,
             currency: 'Gs.',
             style: const TextStyle(
-              fontWeight: FontWeight.w600,
+              fontWeight: FontWeight.bold,
               fontSize: 14,
             ),
             isExpense: true,
@@ -506,6 +600,7 @@ class _CategoryTransactionsScreenState
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
+          color: Colors.grey[200]!,
           border: Border.all(color: Colors.grey[200]!),
           borderRadius: BorderRadius.circular(12),
         ),
@@ -541,7 +636,7 @@ class _CategoryTransactionsScreenState
         name: 'Comida y Bebida',
         emoji: '🍔',
         color: '#E9D5FF',
-        amount: 743985,
+        amount: 7439850,
         percentage: 35.0,
         expenseCount: 42,
       ),
@@ -550,7 +645,7 @@ class _CategoryTransactionsScreenState
         name: 'Transporte',
         emoji: '🚗',
         color: '#DBEAFE',
-        amount: 510550,
+        amount: 5105500,
         percentage: 25.0,
         expenseCount: 28,
       ),
@@ -568,7 +663,7 @@ class _CategoryTransactionsScreenState
         name: 'Entretenimiento',
         emoji: '🎮',
         color: '#D1FAE5',
-        amount: 425000,
+        amount: 4250000,
         percentage: 20.0,
         expenseCount: 15,
       ),
@@ -577,25 +672,22 @@ class _CategoryTransactionsScreenState
         name: 'Salud',
         emoji: '⚕️',
         color: '#FEE2E2',
-        amount: 320000,
+        amount: 3200000,
         percentage: 15.0,
         expenseCount: 8,
       ),
     };
-
     int idAsInt;
     try {
       idAsInt = int.parse(id);
     } catch (e) {
       idAsInt = 1;
     }
-
     return mockCategories['$idAsInt'] ?? mockCategories['1']!;
   }
 
   List<Transaction> _getMockTransactions(String categoryId) {
     final now = DateTime.now();
-
     switch (categoryId) {
       case '1':
         return [
@@ -672,7 +764,6 @@ class Transaction {
   final DateTime date;
   final String location;
   final IconData iconData;
-
   Transaction({
     required this.id,
     required this.description,
@@ -688,7 +779,6 @@ class DateFormatter {
     final now = DateTime.now();
     final yesterday = DateTime(now.year, now.month, now.day - 1);
     final dateToCheck = DateTime(date.year, date.month, date.day);
-
     if (dateToCheck.year == now.year &&
         dateToCheck.month == now.month &&
         dateToCheck.day == now.day) {
@@ -721,11 +811,9 @@ class DateFormatter {
         'Sábado',
         'Domingo'
       ];
-
       final dayIndex = (date.weekday % 7) - 1;
       final dayName = days[dayIndex < 0 ? 6 : dayIndex];
       final monthName = months[date.month - 1];
-
       return '$dayName, ${date.day} de $monthName';
     }
   }

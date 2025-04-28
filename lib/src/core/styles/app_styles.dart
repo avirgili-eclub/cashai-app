@@ -22,6 +22,14 @@ class AppStyles {
   static const Color backgroundColor =
       Color.fromRGBO(243, 244, 246, 1.0); // #F3F4F6
 
+  /// Primary text color - for main content
+  static const Color primaryTextColor =
+      Color.fromRGBO(17, 24, 39, 1.0); // #111827
+
+  /// Secondary text color - for less emphasized content
+  static const Color secondaryTextColor =
+      Color.fromRGBO(107, 114, 128, 1.0); // #6B7280
+
   /// Create a theme using the app colors
   static ThemeData get theme => ThemeData(
         primaryColor: primaryColor,

@@ -46,6 +46,8 @@ dependencies:
   country_code_picker: ^3.0.0
   # Add disk space package for storage management
   disk_space_plus: ^0.2.5
+  # Add month picker dialog for better month selection UI
+  month_picker_dialog: ^6.0.3
 
 dev_dependencies:
   flutter_test:
