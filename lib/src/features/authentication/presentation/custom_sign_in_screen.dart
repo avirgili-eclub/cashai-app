@@ -106,14 +106,7 @@ class _CustomSignInScreenState extends ConsumerState<CustomSignInScreen> {
                 'UserSession after login - userId: ${session.userId}, hasToken: ${session.token != null}',
                 name: 'custom_sign_in_screen');
 
-            // Show success message
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Inicio de sesión exitoso'),
-                backgroundColor: Colors.green,
-                duration: Duration(seconds: 1),
-              ),
-            );
+            // Remove success notification SnackBar
 
             if (context.mounted) {
               developer.log('Navigating to dashboard after successful login',
