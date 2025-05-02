@@ -29,7 +29,7 @@ class InvoiceController extends _$InvoiceController {
 
   Future<bool> uploadInvoice({
     required File invoiceFile,
-    bool useOpenCV = false,
+    bool useOpenCV = true,
     String? categoryId,
     String? sharedGroupId,
   }) async {

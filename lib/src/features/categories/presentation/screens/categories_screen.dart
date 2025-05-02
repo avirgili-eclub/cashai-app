@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter_slidable/flutter_slidable.dart';
 import '../../../../core/styles/app_styles.dart';
 import '../../../../core/auth/providers/user_session_provider.dart';
 import '../../../dashboard/domain/entities/top_category.dart';
@@ -10,6 +11,8 @@ import '../../../dashboard/presentation/controllers/categories_controller.dart';
 import '../../data/datasources/firebase_category_datasource.dart';
 import '../widgets/category_list_item.dart';
 import '../widgets/add_category_modal.dart';
+import '../widgets/edit_category_modal.dart';
+import '../../domain/repositories/category_repository.dart';
 
 class CategoriesScreen extends ConsumerStatefulWidget {
   const CategoriesScreen({Key? key}) : super(key: key);
@@ -145,12 +148,13 @@ class _CategoriesScreenState extends ConsumerState<CategoriesScreen> {
         itemBuilder: (context, index) {
           final category = categoryList[index];
 
-          // Use the new dedicated widget for each item
+          // Use the new dedicated widget for each item with sliding actions
           return Padding(
             padding: const EdgeInsets.only(bottom: 16.0),
-            child: DismissibleCategoryItem(
+            child: SlidableCategoryItem(
               category: category,
               onDeleted: _refreshCategoriesList,
+              onEdited: _refreshCategoriesList,
             ),
           );
         },
@@ -166,7 +170,8 @@ class _CategoriesScreenState extends ConsumerState<CategoriesScreen> {
       _isLoading = true;
       _error = null;
     });
-// Set up new refresh with delay to prevent multiple rapid refreshes
+
+    // Set up new refresh with delay to prevent multiple rapid refreshes
     _refreshDebounce = Timer(const Duration(milliseconds: 300), () async {
       try {
         ref.invalidate(categoriesWithLimitProvider(limit: 0));
@@ -219,36 +224,7 @@ class _CategoriesScreenState extends ConsumerState<CategoriesScreen> {
     }
   }
 
-  // Show success message using SnackBar
-  void _showSuccessMessage(BuildContext context, String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.green,
-        behavior: SnackBarBehavior.floating,
-        margin: const EdgeInsets.all(16),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
-      ),
-    );
-  }
-
-  // Show error message using SnackBar
-  void _showErrorMessage(BuildContext context, String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.red,
-        behavior: SnackBarBehavior.floating,
-        margin: const EdgeInsets.all(16),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
-      ),
-    );
-  }
-
+  // Show add category modal
   void _showAddCategoryModal(BuildContext context, WidgetRef ref) async {
     final result = await showModalBottomSheet<bool>(
       context: context,
@@ -263,163 +239,92 @@ class _CategoriesScreenState extends ConsumerState<CategoriesScreen> {
   }
 }
 
-// New dedicated widget that handles its own dismissal state
-class DismissibleCategoryItem extends StatefulWidget {
+// New widget that handles sliding actions for both edit and delete
+class SlidableCategoryItem extends StatefulWidget {
   final TopCategory category;
   final VoidCallback onDeleted;
+  final VoidCallback onEdited;
 
-  const DismissibleCategoryItem({
+  const SlidableCategoryItem({
     Key? key,
     required this.category,
     required this.onDeleted,
+    required this.onEdited,
   }) : super(key: key);
 
   @override
-  State<DismissibleCategoryItem> createState() =>
-      _DismissibleCategoryItemState();
+  State<SlidableCategoryItem> createState() => _SlidableCategoryItemState();
 }
 
-class _DismissibleCategoryItemState extends State<DismissibleCategoryItem> {
-  // Local state to track if this item has been dismissed
-  bool _isDismissed = false;
+class _SlidableCategoryItemState extends State<SlidableCategoryItem> {
   bool _isDeleting = false;
-  bool _isRestoring = false; // New flag for tracking restoration
+  bool _isEditing = false;
 
   @override
   Widget build(BuildContext context) {
-    // If already dismissed and not being restored, don't show anything
-    if (_isDismissed && !_isRestoring) {
-      return const SizedBox.shrink();
-    }
-
-    // If being restored, show with a different background to indicate restoration
-    if (_isRestoring) {
-      return _buildRestoringItem();
-    }
-
-    return Dismissible(
-      key: ValueKey(
-          'category-${widget.category.id}-${identityHashCode(widget)}'),
-      direction: DismissDirection.endToStart,
-      confirmDismiss: (direction) async {
-        if (_isDeleting) return false;
-
-        // Show confirmation dialog
-        return await showDialog<bool>(
-          context: context,
-          builder: (BuildContext context) {
-            return AlertDialog(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-              title: const Text('Eliminar categoría'),
-              content: RichText(
-                text: TextSpan(
-                  style: const TextStyle(
-                    fontSize: 16,
-                    color: Colors.black87,
-                  ),
-                  children: [
-                    const TextSpan(
-                      text: '¿Estás seguro que deseas eliminar la categoría ',
-                    ),
-                    TextSpan(
-                      text: widget.category.name,
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    const TextSpan(
-                      text: '?\n\n',
-                    ),
-                    TextSpan(
-                      text:
-                          'Esta acción eliminará todos los registros asociados a esta categoría y no se puede deshacer.',
-                      style: TextStyle(color: Colors.red[700]),
-                    ),
-                  ],
+    // Use Slidable widget for sliding actions
+    return Slidable(
+      key: ValueKey('category-${widget.category.id}'),
+      endActionPane: ActionPane(
+        motion: const DrawerMotion(),
+        children: [
+          // Edit action
+          CustomSlidableAction(
+            onPressed: (_) => _showEditCategoryModal(context),
+            backgroundColor: Colors.blue.shade100,
+            foregroundColor: Colors.blue.shade800,
+            borderRadius: const BorderRadius.only(
+              topLeft: Radius.circular(12),
+              bottomLeft: Radius.circular(12),
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.edit_rounded,
+                  color: Colors.blue.shade800,
                 ),
-              ),
-              actions: [
-                TextButton(
-                  style: TextButton.styleFrom(
-                    foregroundColor: Colors.grey[700],
+                const SizedBox(height: 4),
+                Text(
+                  'Editar',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.blue.shade800,
                   ),
-                  onPressed: () {
-                    Navigator.of(context).pop(false);
-                  },
-                  child: const Text('CANCELAR'),
-                ),
-                TextButton(
-                  style: TextButton.styleFrom(
-                    foregroundColor: Colors.red[700],
-                    backgroundColor: Colors.red[50],
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 8,
-                    ),
-                  ),
-                  onPressed: () {
-                    Navigator.of(context).pop(true);
-                  },
-                  child: const Text('ELIMINAR'),
                 ),
               ],
-              actionsPadding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 8,
-              ),
-            );
-          },
-        );
-      },
-      onDismissed: (direction) {
-        // Mark as dismissed immediately to remove from tree - optimistic update
-        setState(() {
-          _isDismissed = true;
-          _isDeleting = true;
-        });
-
-        // Process deletion in the background
-        _deleteCategory();
-      },
-      background: Container(
-        alignment: Alignment.centerRight,
-        padding: const EdgeInsets.only(right: 20.0),
-        decoration: BoxDecoration(
-          color: Colors.red[50],
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.red[100]!),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.end,
-          children: [
-            Text(
-              'Eliminar',
-              style: TextStyle(
-                color: Colors.red[700],
-                fontWeight: FontWeight.bold,
-              ),
             ),
-            const SizedBox(width: 8),
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Colors.red,
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.red.withOpacity(0.3),
-                    blurRadius: 5,
-                    offset: const Offset(0, 2),
+          ),
+          // Delete action
+          CustomSlidableAction(
+            onPressed: (_) => _confirmDelete(context),
+            backgroundColor: Colors.red.shade100,
+            foregroundColor: Colors.red.shade800,
+            borderRadius: const BorderRadius.only(
+              topRight: Radius.circular(12),
+              bottomRight: Radius.circular(12),
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.delete_rounded,
+                  color: Colors.red.shade800,
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Eliminar',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.red.shade800,
                   ),
-                ],
-              ),
-              child: const Icon(
-                Icons.delete_outline,
-                color: Colors.white,
-              ),
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
       child: CategoryListItem(
         topCategory: widget.category,
@@ -427,7 +332,7 @@ class _DismissibleCategoryItemState extends State<DismissibleCategoryItem> {
           // Navigate to category transactions
           developer.log(
             'Navigating to category transactions: ${widget.category.name}',
-            name: 'dismissible_category_item',
+            name: 'slidable_category_item',
           );
           context.pushNamed(
             'categoryTransactions',
@@ -439,118 +344,150 @@ class _DismissibleCategoryItemState extends State<DismissibleCategoryItem> {
     );
   }
 
-  // New widget to show when a category is being restored
-  Widget _buildRestoringItem() {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.yellow[50],
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.amber),
-      ),
-      child: Column(
-        children: [
-          CategoryListItem(
-            topCategory: widget.category,
-            onTap: () {
-              // Disable navigation while restoring
-              _showInfoMessage('Restaurando categoría...');
-            },
+  // Show edit category modal
+  Future<void> _showEditCategoryModal(BuildContext context) async {
+    if (_isEditing) return;
+
+    setState(() {
+      _isEditing = true;
+    });
+
+    try {
+      final result = await showModalBottomSheet<bool>(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (context) => EditCategoryModal(
+          category: widget.category,
+        ),
+      );
+
+      if (result == true) {
+        widget.onEdited();
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isEditing = false;
+        });
+      }
+    }
+  }
+
+  // Confirm delete dialog
+  Future<void> _confirmDelete(BuildContext context) async {
+    if (_isDeleting) return;
+
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
           ),
-          Container(
-            color: Colors.amber.withOpacity(0.2),
-            padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 12),
-            child: Row(
+          title: const Text('Eliminar categoría'),
+          content: RichText(
+            text: TextSpan(
+              style: const TextStyle(
+                fontSize: 16,
+                color: Colors.black87,
+              ),
               children: [
-                const Icon(Icons.refresh, size: 16, color: Colors.amber),
-                const SizedBox(width: 8),
-                const Text(
-                  'Restaurando categoría...',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.amber,
-                  ),
+                const TextSpan(
+                  text: '¿Estás seguro que deseas eliminar la categoría ',
                 ),
-                const Spacer(),
-                SizedBox(
-                  width: 16,
-                  height: 16,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    valueColor:
-                        AlwaysStoppedAnimation<Color>(Colors.amber[700]!),
-                  ),
+                TextSpan(
+                  text: widget.category.name,
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+                const TextSpan(
+                  text: '?\n\n',
+                ),
+                TextSpan(
+                  text:
+                      'Esta acción eliminará todos los registros asociados a esta categoría y no se puede deshacer.',
+                  style: TextStyle(color: Colors.red[700]),
                 ),
               ],
             ),
           ),
-        ],
-      ),
+          actions: [
+            TextButton(
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.grey[700],
+              ),
+              onPressed: () {
+                Navigator.of(context).pop(false);
+              },
+              child: const Text('CANCELAR'),
+            ),
+            TextButton(
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.red[700],
+                backgroundColor: Colors.red[50],
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
+              ),
+              onPressed: () {
+                Navigator.of(context).pop(true);
+              },
+              child: const Text('ELIMINAR'),
+            ),
+          ],
+          actionsPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 8,
+          ),
+        );
+      },
     );
+
+    if (result == true) {
+      await _deleteCategory();
+    }
   }
 
   // Method to handle category deletion with API
   Future<void> _deleteCategory() async {
+    if (!mounted) return;
+
+    setState(() {
+      _isDeleting = true;
+    });
+
     try {
       final ref = ProviderScope.containerOf(context);
 
-      // Get userId from session
-      final userSession = ref.read(userSessionNotifierProvider);
-      final userId = userSession.userId;
+      // Use the repository pattern
+      final repository = ref.read(categoryRepositoryProvider);
 
-      if (userId == null) {
-        _showErrorMessage('No se pudo obtener el ID de usuario');
-        _restoreCategory(); // Restore on error
-        return;
-      }
-
-      // Call the API
-      final categoryDataSource = ref.read(categoryDataSourceProvider);
-      final success =
-          await categoryDataSource.deleteCategory(widget.category.id, userId);
+      final success = await repository.deleteCategory(widget.category.id);
 
       if (mounted) {
         if (success) {
           _showSuccessMessage(
               'Categoría ${widget.category.name} eliminada correctamente');
-          // Don't call widget.onDeleted() here - no need to reload the list
-          // The item is already removed from the UI due to optimistic update
+          widget.onDeleted();
         } else {
           _showErrorMessage('No se pudo eliminar la categoría');
-          _restoreCategory(); // Restore on failure
         }
       }
     } catch (e) {
       if (mounted) {
         _showErrorMessage('Error al eliminar la categoría: ${e.toString()}');
-        _restoreCategory(); // Restore on exception
       }
 
       developer.log('Error deleting category: $e',
-          name: 'dismissible_category_item', error: e);
-    }
-  }
-
-  // New method to restore the category if delete fails
-  void _restoreCategory() {
-    if (!mounted) return;
-
-    setState(() {
-      _isRestoring = true;
-      _isDismissed = false;
-    });
-
-    // Animate the restoration with a brief delay
-    Future.delayed(const Duration(milliseconds: 300), () {
+          name: 'slidable_category_item', error: e);
+    } finally {
       if (mounted) {
         setState(() {
-          _isRestoring = false;
           _isDeleting = false;
         });
-        widget
-            .onDeleted(); // Only refresh the parent list when restoring a category
       }
-    });
+    }
   }
 
   void _showSuccessMessage(String message) {
@@ -572,21 +509,6 @@ class _DismissibleCategoryItemState extends State<DismissibleCategoryItem> {
       SnackBar(
         content: Text(message),
         backgroundColor: Colors.red,
-        behavior: SnackBarBehavior.floating,
-        margin: const EdgeInsets.all(16),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
-      ),
-    );
-  }
-
-  // New method for info messages
-  void _showInfoMessage(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.amber,
         behavior: SnackBarBehavior.floating,
         margin: const EdgeInsets.all(16),
         shape: RoundedRectangleBorder(

@@ -80,7 +80,8 @@ Obtén un resumen claro de tu situación financiera.
 - [ ] Funcionalidad de reseteo de contrasenha
 - [ ] Pantalla de estadisticas
 - [ ] Creacion de gastos/ingresos recurrentes
-- [ ] Gastos compartidos
+- [ ] Gastos 
+- [ ] Actualizar categoria 
 - [ ] Alertas personalizadas
 - [ ] Pantalla creacion de ahorros y metas
 - [ ] Subir Extracto Bancario

@@ -1,26 +1,29 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'invoice_controller.dart';
+part of 'category_repository.dart';
 
 // **************************************************************************
 // RiverpodGenerator
 // **************************************************************************
 
-String _$invoiceControllerHash() => r'214630ac0c098e96d2de051a561491df2ec08f3e';
+String _$categoryRepositoryHash() =>
+    r'8af0237ec870403436a9bc8ff581d0098abeb18e';
 
-/// See also [InvoiceController].
-@ProviderFor(InvoiceController)
-final invoiceControllerProvider =
-    NotifierProvider<InvoiceController, InvoiceUploadState>.internal(
-  InvoiceController.new,
-  name: r'invoiceControllerProvider',
+/// See also [categoryRepository].
+@ProviderFor(categoryRepository)
+final categoryRepositoryProvider =
+    AutoDisposeProvider<CategoryRepository>.internal(
+  categoryRepository,
+  name: r'categoryRepositoryProvider',
   debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
       ? null
-      : _$invoiceControllerHash,
+      : _$categoryRepositoryHash,
   dependencies: null,
   allTransitiveDependencies: null,
 );
 
-typedef _$InvoiceController = Notifier<InvoiceUploadState>;
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef CategoryRepositoryRef = AutoDisposeProviderRef<CategoryRepository>;
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package

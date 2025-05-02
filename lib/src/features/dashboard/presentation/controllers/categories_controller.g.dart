@@ -163,7 +163,7 @@ class _CategoriesWithLimitProviderElement
 }
 
 String _$categoriesControllerHash() =>
-    r'ef4512fcfb38b5a7775de2fa1bf7e69ac8890e1b';
+    r'0d4e813425dbe138e2164a82ca43ec4f7ec83cc8';
 
 /// See also [CategoriesController].
 @ProviderFor(CategoriesController)
