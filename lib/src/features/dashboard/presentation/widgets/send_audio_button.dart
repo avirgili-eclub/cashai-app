@@ -5,8 +5,14 @@ import '../../../../features/audio/presentation/controllers/audio_controller.dar
 class SendAudioButton extends ConsumerStatefulWidget {
   // Add parameter for categoryId
   final String? categoryId;
+  // Add callback for when a transaction is successfully added
+  final VoidCallback? onTransactionAdded;
 
-  const SendAudioButton({Key? key, this.categoryId}) : super(key: key);
+  const SendAudioButton({
+    Key? key,
+    this.categoryId,
+    this.onTransactionAdded,
+  }) : super(key: key);
 
   @override
   ConsumerState<SendAudioButton> createState() => _SendAudioButtonState();
@@ -53,6 +59,17 @@ class _SendAudioButtonState extends ConsumerState<SendAudioButton>
   Widget build(BuildContext context) {
     // Watch the audio controller state
     final audioState = ref.watch(audioControllerProvider);
+
+    // Listen to state changes to detect successful uploads
+    ref.listen(audioControllerProvider, (previous, current) {
+      // If the state changed from uploading to success, trigger the callback
+      if (previous == AudioRecordingState.uploading &&
+          current == AudioRecordingState.success) {
+        if (widget.onTransactionAdded != null) {
+          widget.onTransactionAdded!();
+        }
+      }
+    });
 
     return GestureDetector(
       onLongPressStart: (_) {
@@ -209,5 +226,14 @@ class _SendAudioButtonState extends ConsumerState<SendAudioButton>
         );
       },
     );
+  }
+
+  void _handleSuccessfulAudioSubmission() {
+    // ...existing audio submission logic...
+
+    // Call the callback if provided
+    if (widget.onTransactionAdded != null) {
+      widget.onTransactionAdded!();
+    }
   }
 }

@@ -6,10 +6,11 @@ import '../../../../core/auth/providers/user_session_provider.dart';
 import '../../../../core/styles/app_styles.dart';
 import '../../../../routing/app_router.dart'; // Add this import for AppRoute
 import '../controllers/balance_controller.dart';
+import '../controllers/transaction_controller.dart'; // Add this import
 import '../widgets/app_header.dart';
 import '../widgets/balance_card.dart';
 import '../widgets/collapsible_actions_card.dart';
-import '../widgets/transactions_section.dart';
+import '../widgets/recent_transactions_list.dart'; // Add import for RecentTransactionsList
 import '../widgets/bottom_nav_bar.dart';
 import '../widgets/send_audio_button.dart';
 
@@ -62,7 +63,50 @@ class DashboardScreen extends ConsumerWidget {
               // New collapsible card that contains both QuickAction and Categories sections
               const CollapsibleActionsCard(),
               const SizedBox(height: 24),
-              const TransactionsSection(),
+
+              // Title section for Recent Transactions
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'Transacciones Recientes',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: () {
+                        context.pushNamed(
+                          AppRoute.allTransactions.name,
+                          queryParameters: {'filter': ''},
+                        );
+                      },
+                      child: const Text(
+                        'Ver Todo',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // Container with fixed height for the transactions list
+              Container(
+                height: 280,
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                child: const RecentTransactionsList(
+                  limit: 5,
+                  showEmpty: true,
+                  emptyMessage: 'No hay transacciones recientes',
+                ),
+              ),
+
               // Extra space at bottom for navigation bar
               const SizedBox(height: 60),
             ],
@@ -77,7 +121,19 @@ class DashboardScreen extends ConsumerWidget {
       floatingActionButton: Transform.translate(
         // Offsetting the button position
         offset: const Offset(0, 15), // Positive y value moves it down
-        child: const SendAudioButton(),
+        child: SendAudioButton(
+          onTransactionAdded: () {
+            // Refresh both the transactions list and the balance card
+            developer.log('Audio sent successfully, refreshing data',
+                name: 'dashboard_screen');
+            // Refresh balance
+            ref.read(balanceControllerProvider.notifier).refreshBalance();
+            // Refresh transactions
+            ref
+                .read(transactionsControllerProvider.notifier)
+                .refreshTransactions();
+          },
+        ),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
     );
