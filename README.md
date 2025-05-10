@@ -15,7 +15,7 @@ UCash es una aplicación móvil que revoluciona la gestión de finanzas personal
 
 📱 **Capturas de Pantalla**
 
-![](https://avirgili-eclub.github.io/cashai-landing/images/app-screenshot.png)
+![](https://www.ucashai.app/images/app-screenshot.png)
 
 Pantalla principal de CashAI.
 
