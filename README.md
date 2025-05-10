@@ -13,21 +13,21 @@ UCash es una aplicación móvil que revoluciona la gestión de finanzas personal
 ¡Todo desde una sola aplicación intuitiva y segura!
 
 
-📱 **Capturas de Pantalla**
+## 📱 **Capturas de Pantalla**
 
-![](https://www.ucashai.app/images/app-screenshot.png)
+![](/assets/app-screenshot.png)
 
 Pantalla principal de CashAI.
 
-![](https://avirgili-eclub.github.io/cashai-landing/images/app-screenshot3.png)
+![](/assets/app-screenshot3.png)
 
 Análisis detallado de tus gastos.
 
-![](https://avirgili-eclub.github.io/cashai-landing/images/app-screenshot1.png)
+![](/assets/app-screenshot1.png)
 
 Escanea y registra tus tickets fácilmente.
 
-![](https://avirgili-eclub.github.io/cashai-landing/images/app-screenshot4.png)
+![](/assets/app-screenshot4.png)
 
 Obtén un resumen claro de tu situación financiera.
 
@@ -77,21 +77,20 @@ Obtén un resumen claro de tu situación financiera.
 
 **Roadmap**
 
-- [ ] Completar UserProfile (CRUD)
+- [x] Completar UserProfile (CRUD)
 - [x] Vista de transacciones por categoria
 - [ ] Funcionalidad escaneo de tickets/factura. (Captura automatica)
 - [ ] Funcionalidad de reseteo de contrasenha
 - [ ] Pantalla de estadisticas
 - [ ] Creacion de gastos/ingresos recurrentes
-- [ ] Gastos 
-- [ ] Actualizar categoria 
+- [x] Actualizar categoria 
 - [ ] Alertas personalizadas
 - [ ] Pantalla creacion de ahorros y metas
 - [ ] Subir Extracto Bancario
 - [ ] Confirmacion de email para habilitar al usuario
 - [ ] Agente IA ChatBot de Finanzas personal
 - [ ] Implementacion de OTP para registro de usuarios
-- [ ] API B2b
+- [ ] API B2B
 
 > Este es un roadmap tentativo aun.
 
