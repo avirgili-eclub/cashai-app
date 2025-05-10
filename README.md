@@ -56,7 +56,9 @@ Obtén un resumen claro de tu situación financiera.
 
     - Autenticación: Firebase Auth, Google Auth, Apple Auth, Custom Auth
 
-    - Base de Datos: Cloud Firestore
+    - Base de Datos: PostgreSQL
+
+    - Backend: Spring Boot 3.4.2
 
     - OCR y AI: Integración con servicios de inteligencia artificial
 
@@ -64,10 +66,11 @@ Obtén un resumen claro de tu situación financiera.
 
 ## 📈 Planes de Suscripción
 
-    Plan | Descripción | Precio
-    Free | Acceso limitado a funcionalidades | Gratis
-    Avanzado | Funcionalidades extendidas y análisis | $4.99/mes
-    Pro | Todas las funcionalidades sin restricciones. | $9.99/mes
+    Plan     | Descripción                                 | Precio
+   
+    Free     | Acceso limitado a funcionalidades           | Gratis
+    Avanzado | Funcionalidades extendidas y análisis       | $4.99/mes
+    Pro      | Todas las funcionalidades sin restricciones | $9.99/mes
 
 > **Nota**: Precios sujetos a cambios.
 
