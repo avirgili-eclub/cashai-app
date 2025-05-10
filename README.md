@@ -1,6 +1,6 @@
-# 💸 NUMIA – Tu Asistente Financiero Inteligente
+# 💸 UCash AI – Tu Asistente Financiero Inteligente
 
-NUM IA es una aplicación móvil que revoluciona la gestión de finanzas personales mediante inteligencia artificial. Con NUMIA, puedes:
+UCash es una aplicación móvil que revoluciona la gestión de finanzas personales mediante inteligencia artificial. Con NUMIA, puedes:
 
 📸 Escanear tickets y recibos.
 
