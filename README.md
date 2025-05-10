@@ -1,6 +1,6 @@
 # 💸 UCash AI – Tu Asistente Financiero Inteligente
 
-UCash es una aplicación móvil que revoluciona la gestión de finanzas personales mediante inteligencia artificial. Con NUMIA, puedes:
+UCash es una aplicación móvil que revoluciona la gestión de finanzas personales mediante inteligencia artificial. Con UCash, puedes:
 
 📸 Escanear tickets y recibos.
 
