@@ -2,6 +2,8 @@ import 'dart:developer' as developer;
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../../../core/auth/providers/user_session_provider.dart';
 import '../../domain/entities/user_profile_dto.dart';
+import '../../domain/entities/password_change_dto.dart';
+import '../../domain/entities/api_response_dto.dart';
 import '../../domain/repositories/user_profile_repository.dart';
 import '../datasources/firebase_user_profile_datasource.dart';
 
@@ -64,6 +66,27 @@ class UserProfileRepositoryImpl implements UserProfileRepository {
         askForAudioCategory: true,
         askForTransactionCategoryNotification: false,
         authBiometric: false,
+      );
+    }
+  }
+
+  @override
+  Future<ApiResponseDTO<void>> changePassword(
+      PasswordChangeDTO passwordChangeDTO) async {
+    developer.log('Changing user password', name: 'user_profile_repository');
+
+    try {
+      final result = await dataSource.changePassword(token, passwordChangeDTO);
+      developer.log(
+          'Password change result: ${result.success ? "Success" : "Failed"} - ${result.message}',
+          name: 'user_profile_repository');
+      return result;
+    } catch (e, stack) {
+      developer.log('Error changing password: $e',
+          name: 'user_profile_repository', error: e, stackTrace: stack);
+      return ApiResponseDTO(
+        success: false,
+        message: 'Error al cambiar la contraseña: $e',
       );
     }
   }

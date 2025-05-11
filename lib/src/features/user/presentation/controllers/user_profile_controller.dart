@@ -1,6 +1,8 @@
 import 'dart:developer' as developer;
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../domain/entities/user_profile_dto.dart';
+import '../../domain/entities/password_change_dto.dart';
+import '../../domain/entities/api_response_dto.dart';
 import '../../domain/repositories/user_profile_repository.dart';
 import '../../../../core/auth/providers/user_session_provider.dart';
 import '../../../../routing/app_router.dart';
@@ -85,6 +87,54 @@ class UserProfileController extends _$UserProfileController {
           name: 'user_profile_controller', error: e, stackTrace: st);
       state = AsyncValue.error(e, st);
       return false;
+    }
+  }
+
+  Future<ApiResponseDTO<void>> changePassword(
+    String currentPassword,
+    String newPassword,
+    String confirmPassword,
+  ) async {
+    developer.log('Attempting to change password',
+        name: 'user_profile_controller');
+
+    final passwordChangeDTO = PasswordChangeDTO(
+      currentPassword: currentPassword,
+      newPassword: newPassword,
+      confirmPassword: confirmPassword,
+    );
+
+    // Client-side validation
+    if (!passwordChangeDTO.isValid()) {
+      return ApiResponseDTO(
+        success: false,
+        message: !passwordChangeDTO.passwordsMatch()
+            ? 'Las contraseñas no coinciden'
+            : 'Todos los campos son obligatorios',
+      );
+    }
+
+    // Call the repository to change password
+    try {
+      final repository = ref.read(userProfileRepositoryProvider);
+      final result = await repository.changePassword(passwordChangeDTO);
+
+      if (result.success) {
+        developer.log('Password changed successfully',
+            name: 'user_profile_controller');
+      } else {
+        developer.log('Failed to change password: ${result.message}',
+            name: 'user_profile_controller');
+      }
+
+      return result;
+    } catch (e, st) {
+      developer.log('Error while changing password: $e',
+          name: 'user_profile_controller', error: e, stackTrace: st);
+      return ApiResponseDTO(
+        success: false,
+        message: 'Error al cambiar la contraseña: $e',
+      );
     }
   }
 }

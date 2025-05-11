@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:http/http.dart' as http;
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../domain/entities/user_profile_dto.dart';
+import '../../domain/entities/password_change_dto.dart';
 import '../../domain/entities/api_response_dto.dart';
 import '../../../../core/auth/providers/user_session_provider.dart';
 
@@ -125,6 +126,41 @@ class FirebaseUserProfileDataSource {
       developer.log('Network error during update: $e',
           name: 'user_profile_datasource', error: e, stackTrace: stack);
       throw Exception('Failed to connect to the server: $e');
+    }
+  }
+
+  Future<ApiResponseDTO<void>> changePassword(
+      String token, PasswordChangeDTO passwordChangeDTO) async {
+    // Updated API endpoint for change password
+    final url = '$baseUrl/change-password';
+    developer.log('Making API request to change password: $url',
+        name: 'user_profile_datasource');
+
+    try {
+      final response = await client.post(
+        Uri.parse(url),
+        headers: {
+          'Content-Type': 'application/json; charset=utf-8',
+          'Accept': 'application/json; charset=utf-8',
+          'Authorization': 'Bearer $token',
+        },
+        body: json.encode(passwordChangeDTO.toJson()),
+      );
+
+      developer.log(
+          'Change password response status code: ${response.statusCode}',
+          name: 'user_profile_datasource');
+
+      final Map<String, dynamic> data = json.decode(response.body);
+
+      return ApiResponseDTO<void>.fromJson(data);
+    } catch (e, stack) {
+      developer.log('Network error during password change: $e',
+          name: 'user_profile_datasource', error: e, stackTrace: stack);
+      return ApiResponseDTO(
+        success: false,
+        message: 'Error de conexión: $e',
+      );
     }
   }
 }
