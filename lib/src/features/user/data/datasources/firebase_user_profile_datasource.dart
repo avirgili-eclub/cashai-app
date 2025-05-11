@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:http/http.dart' as http;
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../domain/entities/user_profile_dto.dart';
+import '../../domain/entities/api_response_dto.dart';
 import '../../../../core/auth/providers/user_session_provider.dart';
 
 part 'firebase_user_profile_datasource.g.dart';
@@ -24,8 +25,8 @@ class FirebaseUserProfileDataSource {
         'Making API request with token: ${token.isNotEmpty ? "Valid Token" : "Empty Token"}',
         name: 'user_profile_datasource');
 
-    // Remove userId from URL - backend should extract it from JWT
-    final url = '$baseUrl/users/profile';
+    // Updated API endpoint
+    final url = '$baseUrl/profile';
     developer.log('Making API request to: $url',
         name: 'user_profile_datasource');
 
@@ -45,8 +46,22 @@ class FirebaseUserProfileDataSource {
       if (response.statusCode == 200) {
         developer.log('Response body: ${response.body}',
             name: 'user_profile_datasource');
-        final Map<String, dynamic> data = json.decode(response.body);
-        return UserProfileDTO.fromJson(data);
+
+        // Parse the ApiResponseDTO wrapper first
+        final Map<String, dynamic> responseData = json.decode(response.body);
+        final ApiResponseDTO<Map<String, dynamic>> apiResponse =
+            ApiResponseDTO<Map<String, dynamic>>.fromJson(responseData);
+
+        if (!apiResponse.success) {
+          throw Exception('API returned error: ${apiResponse.message}');
+        }
+
+        // Extract the actual UserProfileDTO data
+        if (apiResponse.data == null) {
+          throw Exception('API returned null profile data');
+        }
+
+        return UserProfileDTO.fromJson(apiResponse.data!);
       } else {
         developer.log('Error response: ${response.body}',
             name: 'user_profile_datasource');
@@ -62,8 +77,8 @@ class FirebaseUserProfileDataSource {
   // Updated method to handle new API response
   Future<UserProfileDTO> updateUserProfile(
       String token, String userId, Map<String, dynamic> updates) async {
-    // Use updated endpoint without userId parameter
-    final url = '$baseUrl/users/profile';
+    // Updated API endpoint
+    final url = '$baseUrl/profile';
     developer.log('Making API request to update profile: $url',
         name: 'user_profile_datasource');
 
@@ -84,9 +99,23 @@ class FirebaseUserProfileDataSource {
       if (response.statusCode == 200) {
         developer.log('Update successful: ${response.body}',
             name: 'user_profile_datasource');
-        // Parse the returned user profile
-        final Map<String, dynamic> data = json.decode(response.body);
-        return UserProfileDTO.fromJson(data);
+
+        // Parse the ApiResponseDTO wrapper first
+        final Map<String, dynamic> responseData = json.decode(response.body);
+        final ApiResponseDTO<Map<String, dynamic>> apiResponse =
+            ApiResponseDTO<Map<String, dynamic>>.fromJson(responseData);
+
+        if (!apiResponse.success) {
+          throw Exception(
+              'API returned error on update: ${apiResponse.message}');
+        }
+
+        // Extract the actual updated UserProfileDTO
+        if (apiResponse.data == null) {
+          throw Exception('API returned null profile data after update');
+        }
+
+        return UserProfileDTO.fromJson(apiResponse.data!);
       } else {
         developer.log('Error response: ${response.body}',
             name: 'user_profile_datasource');
@@ -117,7 +146,8 @@ FirebaseUserProfileDataSource userProfileDataSource(
     host = 'http://localhost:8080';
   }
 
-  final baseUrl = '$host/api/v1/bff';
+  // Updated base URL to use the new API path
+  final baseUrl = '$host/api/v1/users';
   developer.log('Using API base URL: $baseUrl',
       name: 'user_profile_datasource');
 

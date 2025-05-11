@@ -7,7 +7,7 @@ part of 'firebase_user_profile_datasource.dart';
 // **************************************************************************
 
 String _$userProfileDataSourceHash() =>
-    r'cc8baa07a3871c4c61e18ae32d8ebfaf5932e5dd';
+    r'ce67d37406d2b8e18d1dc715b7df222f1a37befe';
 
 /// See also [userProfileDataSource].
 @ProviderFor(userProfileDataSource)
