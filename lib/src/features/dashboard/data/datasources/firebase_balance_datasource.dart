@@ -20,39 +20,6 @@ class FirebaseBalanceDataSource {
     http.Client? client,
   }) : client = client ?? http.Client();
 
-  Future<Balance> getMonthlyBalance(String userId) async {
-    final url = '$baseUrl/users/$userId/monthly-balance';
-    developer.log('Making API request to: $url', name: 'balance_datasource');
-
-    try {
-      final response = await client.get(
-        Uri.parse(url),
-        headers: {
-          'Content-Type': 'application/json; charset=utf-8',
-          'Accept': 'application/json; charset=utf-8',
-        },
-      );
-
-      developer.log('Response status code: ${response.statusCode}',
-          name: 'balance_datasource');
-
-      if (response.statusCode == 200) {
-        developer.log('Response body: ${response.body}',
-            name: 'balance_datasource');
-        final Map<String, dynamic> data = json.decode(response.body);
-        return Balance.fromJson(data);
-      } else {
-        developer.log('Error response: ${response.body}',
-            name: 'balance_datasource');
-        throw Exception('Failed to load balance: ${response.statusCode}');
-      }
-    } catch (e, stack) {
-      developer.log('Network error: $e',
-          name: 'balance_datasource', error: e, stackTrace: stack);
-      throw Exception('Failed to connect to the server: $e');
-    }
-  }
-
   Future<List<TopCategory>> getTopCategories(String userId,
       {int? limit}) async {
     final url =

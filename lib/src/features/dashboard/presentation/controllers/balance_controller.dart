@@ -3,7 +3,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../domain/entities/balance.dart';
 import '../../domain/repositories/balance_repository.dart';
 import '../../../../core/auth/providers/user_session_provider.dart';
-import '../../../../routing/app_router.dart'; // Add this import for goRouterProvider
+import '../../../../routing/app_router.dart';
 
 part 'balance_controller.g.dart';
 
@@ -46,6 +46,18 @@ class BalanceController extends _$BalanceController {
 
     final repository = ref.watch(balanceRepositoryProvider);
     try {
+      // Use the authenticated endpoint when user has a token
+      if (userSession.token != null && userSession.token!.isNotEmpty) {
+        developer.log('Using authenticated balance endpoint',
+            name: 'balance_controller');
+        final balance = await repository.getAuthenticatedBalance();
+        developer.log(
+            'Authenticated balance fetched successfully: ${balance.totalBalance}',
+            name: 'balance_controller');
+        return balance;
+      }
+
+      // Fallback to the original endpoint
       final balance = await repository.getBalance();
       developer.log('Balance fetched successfully: ${balance.totalBalance}',
           name: 'balance_controller');

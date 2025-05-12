@@ -8,6 +8,7 @@ import '../../domain/entities/user_profile_dto.dart';
 import '../../domain/entities/password_change_dto.dart';
 import '../../domain/entities/api_response_dto.dart';
 import '../../../../core/auth/providers/user_session_provider.dart';
+import '../../../../features/dashboard/domain/entities/balance.dart'; // Add this import
 
 part 'firebase_user_profile_datasource.g.dart';
 
@@ -161,6 +162,73 @@ class FirebaseUserProfileDataSource {
         success: false,
         message: 'Error de conexión: $e',
       );
+    }
+  }
+
+  Future<Balance> getMonthlyBalance(String token,
+      {int? month, int? year}) async {
+    // Build query parameters for month and year if provided
+    final queryParams = <String, String>{};
+    if (month != null) {
+      queryParams['month'] = month.toString();
+    }
+    if (year != null) {
+      queryParams['year'] = year.toString();
+    }
+
+    // Build the URL with query parameters
+    final uri = Uri.parse('$baseUrl/monthly-balance').replace(
+      queryParameters: queryParams.isNotEmpty ? queryParams : null,
+    );
+
+    developer.log(
+        'Making API request for balance with token: ${token.isNotEmpty ? "Valid Token" : "Empty Token"}',
+        name: 'user_profile_datasource');
+    developer.log('Making API request to: ${uri.toString()}',
+        name: 'user_profile_datasource');
+
+    try {
+      final response = await client.get(
+        uri,
+        headers: {
+          'Content-Type': 'application/json; charset=utf-8',
+          'Accept': 'application/json; charset=utf-8',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      developer.log('Response status code: ${response.statusCode}',
+          name: 'user_profile_datasource');
+
+      if (response.statusCode == 200) {
+        developer.log('Response body: ${response.body}',
+            name: 'user_profile_datasource');
+
+        // Parse the ApiResponseDTO wrapper first
+        final Map<String, dynamic> responseData = json.decode(response.body);
+        final ApiResponseDTO<Map<String, dynamic>> apiResponse =
+            ApiResponseDTO<Map<String, dynamic>>.fromJson(responseData);
+
+        if (!apiResponse.success) {
+          throw Exception('API returned error: ${apiResponse.message}');
+        }
+
+        // Extract the actual Balance data
+        if (apiResponse.data == null) {
+          throw Exception('API returned null balance data');
+        }
+
+        return Balance.fromJson(apiResponse.data!);
+      } else {
+        developer.log('Error response: ${response.body}',
+            name: 'user_profile_datasource');
+        throw Exception(
+            'Failed to load monthly balance: ${response.statusCode}');
+      }
+    } catch (e, stack) {
+      developer.log('Network error: $e',
+          name: 'user_profile_datasource', error: e, stackTrace: stack);
+      throw Exception('Failed to connect to the server: $e');
     }
   }
 }

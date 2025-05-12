@@ -5,35 +5,58 @@ import '../../domain/entities/balance.dart';
 import '../../domain/entities/top_category.dart';
 import '../../domain/repositories/balance_repository.dart';
 import '../datasources/firebase_balance_datasource.dart';
+import '../../../../features/user/data/datasources/firebase_user_profile_datasource.dart';
 
 part 'balance_repository_impl.g.dart';
 
 class BalanceRepositoryImpl implements BalanceRepository {
   final FirebaseBalanceDataSource dataSource;
-  final String
-      userId; // Keep this as non-nullable for repository implementation
+  final FirebaseUserProfileDataSource userProfileDataSource;
+  final String userId;
+  final String token;
 
-  BalanceRepositoryImpl({required this.dataSource, required this.userId});
+  BalanceRepositoryImpl({
+    required this.dataSource,
+    required this.userProfileDataSource,
+    required this.userId,
+    required this.token,
+  });
 
   @override
   Future<Balance> getBalance() async {
-    developer.log('Getting balance for userId: $userId',
+    // Simply delegate to the authenticated method
+    return getAuthenticatedBalance();
+  }
+
+  @override
+  Future<Balance> getAuthenticatedBalance({int? month, int? year}) async {
+    developer.log(
+        'Getting authenticated balance with token: ${token.isNotEmpty ? "Valid Token" : "Empty Token"}',
         name: 'balance_repository');
+
+    if (token.isEmpty) {
+      developer.log('No authentication token available',
+          name: 'balance_repository');
+      throw Exception('No authentication token available');
+    }
+
     try {
-      final balance = await dataSource.getMonthlyBalance(userId);
-      developer.log('Successfully retrieved balance',
+      final balance = await userProfileDataSource.getMonthlyBalance(
+        token,
+        month: month,
+        year: year,
+      );
+      developer.log('Successfully retrieved authenticated balance',
           name: 'balance_repository');
       return balance;
     } catch (e, stack) {
-      developer.log('Error getting balance: $e',
+      developer.log('Error getting authenticated balance: $e',
           name: 'balance_repository', error: e, stackTrace: stack);
 
-      // Log fallback to mock data
-      developer.log('Fallback to mock data', name: 'balance_repository');
-
       // Fallback to mock data in case of error during development
+      developer.log('Fallback to mock data', name: 'balance_repository');
       return Balance(
-        monthlyIncome: 0, // Using more realistic data for debugging
+        monthlyIncome: 0,
         extraIncome: 0,
         totalIncome: 0,
         expenses: 0,
@@ -98,6 +121,8 @@ class BalanceRepositoryImpl implements BalanceRepository {
 @Riverpod(keepAlive: true)
 BalanceRepository balanceRepositoryImpl(BalanceRepositoryImplRef ref) {
   final dataSource = ref.watch(balanceDataSourceProvider);
+  final userProfileDataSource =
+      ref.watch(userProfileDataSourceProvider); // Add this
   final userSession = ref.watch(userSessionNotifierProvider);
 
   // Check if user is properly authenticated
@@ -109,12 +134,18 @@ BalanceRepository balanceRepositoryImpl(BalanceRepositoryImplRef ref) {
     // Return a repository that will throw errors when accessed
     return BalanceRepositoryImpl(
       dataSource: dataSource,
+      userProfileDataSource: userProfileDataSource, // Add this
       userId:
           '', // Empty string that will trigger proper error handling in methods
+      token: '', // Empty token
     );
   }
 
   // User is authenticated, return normal repository
   return BalanceRepositoryImpl(
-      dataSource: dataSource, userId: userSession.userId!);
+    dataSource: dataSource,
+    userProfileDataSource: userProfileDataSource, // Add this
+    userId: userSession.userId!,
+    token: userSession.token ?? '', // Add token
+  );
 }
