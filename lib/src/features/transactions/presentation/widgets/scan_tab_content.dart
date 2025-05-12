@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:developer' as developer;
 import 'dart:io';
+import 'dart:math' as math;
 
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
@@ -8,12 +9,20 @@ import 'package:flutter/services.dart';
 import 'package:flutter_doc_scanner/flutter_doc_scanner.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_ml_kit/google_ml_kit.dart'; // Multi-plataforma ML Kit
+import 'package:image/image.dart' as img;
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:disk_space_plus/disk_space_plus.dart'; // Updated import
 import '../../../../core/styles/app_styles.dart';
 import '../controllers/invoice_controller.dart';
+
+// Constantes para la detección de documentos
+const double _kMinConfidenceThreshold =
+    0.7; // Umbral de confianza mínimo para detección
+const int _kRequiredSteadyFrames =
+    10; // Número de frames consecutivos para confirmar detección
 
 class ScanTabContent extends ConsumerStatefulWidget {
   const ScanTabContent({Key? key}) : super(key: key);
@@ -45,6 +54,16 @@ class _ScanTabContentState extends ConsumerState<ScanTabContent>
   // Add a flag to track if gallery is open
   bool _isGalleryOpen = false;
 
+  // Añadir un temporizador para analizar los frames de la cámara
+  Timer? _frameAnalysisTimer;
+  bool _isAnalyzingFrame = false;
+  int _steadyFrameCount = 0; // Contador de frames donde se detecta un documento
+
+  // Detección de documentos con ML Kit
+  final ImageLabeler _imageLabeler = GoogleMlKit.vision.imageLabeler(
+      ImageLabelerOptions(confidenceThreshold: _kMinConfidenceThreshold));
+  final TextRecognizer _textRecognizer = GoogleMlKit.vision.textRecognizer();
+
   @override
   void initState() {
     super.initState();
@@ -54,8 +73,11 @@ class _ScanTabContentState extends ConsumerState<ScanTabContent>
 
   @override
   void dispose() {
+    _stopFrameAnalysis();
     WidgetsBinding.instance.removeObserver(this);
     _controller?.dispose();
+    _imageLabeler.close();
+    _textRecognizer.close();
     super.dispose();
   }
 
@@ -216,6 +238,9 @@ class _ScanTabContentState extends ConsumerState<ScanTabContent>
 
       // Ejecutar limpieza de caché al iniciar
       _cleanupScanCache();
+
+      // Iniciar análisis de frames cuando la cámara está lista
+      _startFrameAnalysis();
     } catch (e) {
       developer.log('Error initializing camera: $e',
           name: 'scan_tab_content', error: e);
@@ -254,6 +279,184 @@ class _ScanTabContentState extends ConsumerState<ScanTabContent>
       // No need to reinitialize, just allow the app to use the camera again
       setState(() {});
     }
+  }
+
+  // Iniciar análisis de frames cuando la cámara está lista
+  void _startFrameAnalysis() {
+    if (_frameAnalysisTimer != null) {
+      _frameAnalysisTimer!.cancel();
+    }
+
+    _frameAnalysisTimer =
+        Timer.periodic(const Duration(milliseconds: 500), (timer) {
+      if (!_isProcessing &&
+          _controller != null &&
+          _controller!.value.isInitialized &&
+          !_isAnalyzingFrame) {
+        _analyzeCurrentFrame();
+      }
+    });
+
+    developer.log('Analizador de frames iniciado', name: 'scan_tab_content');
+  }
+
+  // Detener análisis de frames
+  void _stopFrameAnalysis() {
+    _frameAnalysisTimer?.cancel();
+    _frameAnalysisTimer = null;
+    _steadyFrameCount = 0;
+    developer.log('Analizador de frames detenido', name: 'scan_tab_content');
+  }
+
+  // Analizar el frame actual de la cámara
+  Future<void> _analyzeCurrentFrame() async {
+    if (_isAnalyzingFrame || !mounted) return;
+
+    _isAnalyzingFrame = true;
+    try {
+      // Capturar imagen sin hacer ruido (sin sonido ni flash)
+      final XFile? rawImage = await _controller?.takePicture();
+      if (rawImage == null) {
+        _isAnalyzingFrame = false;
+        return;
+      }
+
+      // Verificar si hay un documento en el frame
+      final bool hasDocument =
+          await _detectDocumentInImage(File(rawImage.path));
+
+      // Si detectamos un documento, incrementar contador de frames estables
+      if (hasDocument) {
+        _steadyFrameCount++;
+        developer.log(
+            'Documento detectado: frame $_steadyFrameCount/$_kRequiredSteadyFrames',
+            name: 'scan_tab_content');
+
+        // Si alcanza el umbral, realizar la captura automática
+        if (_steadyFrameCount >= _kRequiredSteadyFrames) {
+          _steadyFrameCount = 0;
+          // Guardar imagen en caché y mostrarla
+          final savedPath = await _saveImageToScanCache(File(rawImage.path));
+
+          if (mounted) {
+            setState(() {
+              _scannedImage = File(savedPath);
+              _isProcessing = false;
+            });
+
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Documento detectado automáticamente'),
+                backgroundColor: Colors.green,
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+          }
+
+          _stopFrameAnalysis();
+          return;
+        }
+      } else {
+        // Reiniciar contador si no se detecta documento
+        if (_steadyFrameCount > 0) {
+          _steadyFrameCount = 0;
+        }
+      }
+
+      // Eliminar la imagen temporal
+      try {
+        await File(rawImage.path).delete();
+      } catch (e) {
+        // Ignorar errores al eliminar archivo temporal
+      }
+    } catch (e) {
+      developer.log('Error al analizar frame: $e',
+          name: 'scan_tab_content', error: e);
+    } finally {
+      _isAnalyzingFrame = false;
+    }
+  }
+
+  // Detectar si hay un documento en la imagen utilizando Google ML Kit (multiplataforma)
+  Future<bool> _detectDocumentInImage(File imageFile) async {
+    try {
+      // Convertir la imagen al formato que requiere ML Kit
+      final inputImage = InputImage.fromFilePath(imageFile.path);
+
+      // 1. Detectar texto en la imagen (característico de facturas/tickets)
+      final recognizedText = await _textRecognizer.processImage(inputImage);
+
+      // 2. Detectar etiquetas/objetos en la imagen
+      final labels = await _imageLabeler.processImage(inputImage);
+
+      // Revisar si hay etiquetas relacionadas con documentos (recibo, factura, papel)
+      bool hasDocumentLabels = labels.any((label) =>
+          label.confidence >= _kMinConfidenceThreshold &&
+          (label.label.toLowerCase().contains('document') ||
+              label.label.toLowerCase().contains('paper') ||
+              label.label.toLowerCase().contains('receipt') ||
+              label.label.toLowerCase().contains('invoice') ||
+              label.label.toLowerCase().contains('bill')));
+
+      // Analizar si hay suficiente texto como para ser un documento
+      // Las facturas/tickets normalmente tienen múltiples bloques de texto
+      bool hasEnoughTextBlocks = recognizedText.blocks.length >= 3;
+
+      // Analizar distribución del texto (documentos suelen tener texto estructurado)
+      bool hasStructuredLayout = _analyzeTextLayout(recognizedText);
+
+      // Decision final basada en una combinación de factores
+      bool isLikelyDocument =
+          hasEnoughTextBlocks && (hasDocumentLabels || hasStructuredLayout);
+
+      if (isLikelyDocument) {
+        developer.log(
+            'Documento detectado: bloques de texto=${recognizedText.blocks.length}, '
+            'etiquetas documento=$hasDocumentLabels, estructura=$hasStructuredLayout',
+            name: 'scan_tab_content');
+      }
+
+      return isLikelyDocument;
+    } catch (e) {
+      developer.log('Error en detección de documento: $e',
+          name: 'scan_tab_content', error: e);
+      return false;
+    }
+  }
+
+  // Analiza la distribución del texto para determinar si tiene estructura de documento
+  bool _analyzeTextLayout(RecognizedText recognizedText) {
+    if (recognizedText.blocks.isEmpty) return false;
+
+    // Verificar si hay múltiples líneas de texto alineadas (común en facturas)
+    List<double> leftEdges = [];
+
+    // Recolectar posiciones de los bordes izquierdos de los bloques de texto
+    for (final block in recognizedText.blocks) {
+      leftEdges.add(block.cornerPoints?[0].x.toDouble() ?? 0);
+    }
+
+    // Agrupar bordes similares (con una tolerancia)
+    Map<double, int> edgeGroups = {};
+    const double tolerance = 20.0; // Tolerancia en píxeles
+
+    for (double edge in leftEdges) {
+      bool grouped = false;
+      for (double groupEdge in edgeGroups.keys) {
+        if ((edge - groupEdge).abs() < tolerance) {
+          edgeGroups[groupEdge] = (edgeGroups[groupEdge] ?? 0) + 1;
+          grouped = true;
+          break;
+        }
+      }
+
+      if (!grouped) {
+        edgeGroups[edge] = 1;
+      }
+    }
+
+    // Si hay al menos un grupo con múltiples bloques alineados, es probable que sea un documento
+    return edgeGroups.values.any((count) => count >= 3);
   }
 
   Future<void> _scanDocument() async {
