@@ -8,6 +8,7 @@ import '../../domain/entities/balance.dart';
 import '../../domain/entities/top_category.dart';
 import '../../domain/entities/recent_transaction.dart';
 import '../../../../features/categories/domain/entities/transactions_by_category_dto.dart';
+import '../../../../core/config/api_config.dart'; // Import the API config
 
 part 'firebase_balance_datasource.g.dart';
 
@@ -357,21 +358,8 @@ class FirebaseBalanceDataSource {
 
 @riverpod
 FirebaseBalanceDataSource balanceDataSource(BalanceDataSourceRef ref) {
-  // Choose the correct host based on platform
-  String host;
-
-  if (kIsWeb) {
-    // Web uses the current origin
-    host = 'http://localhost:8080';
-  } else if (Platform.isAndroid) {
-    // Android emulator needs special IP for host's localhost
-    host = 'http://10.0.2.2:8080';
-  } else {
-    // iOS simulator and desktop can use localhost
-    host = 'http://localhost:8080';
-  }
-
-  final baseUrl = '$host/api/v1/bff';
+  // Use the centralized API configuration
+  final baseUrl = ApiConfig().getApiUrl('bff');
   developer.log('Using API base URL: $baseUrl', name: 'balance_datasource');
 
   return FirebaseBalanceDataSource(baseUrl: baseUrl);

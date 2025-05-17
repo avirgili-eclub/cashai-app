@@ -8,7 +8,8 @@ import '../../domain/entities/user_profile_dto.dart';
 import '../../domain/entities/password_change_dto.dart';
 import '../../domain/entities/api_response_dto.dart';
 import '../../../../core/auth/providers/user_session_provider.dart';
-import '../../../../features/dashboard/domain/entities/balance.dart'; // Add this import
+import '../../../../core/config/api_config.dart'; // Import the API config
+import '../../../../features/dashboard/domain/entities/balance.dart';
 
 part 'firebase_user_profile_datasource.g.dart';
 
@@ -236,22 +237,8 @@ class FirebaseUserProfileDataSource {
 @riverpod
 FirebaseUserProfileDataSource userProfileDataSource(
     UserProfileDataSourceRef ref) {
-  // Choose the correct host based on platform
-  String host;
-
-  if (kIsWeb) {
-    // Web uses the current origin
-    host = 'http://localhost:8080';
-  } else if (Platform.isAndroid) {
-    // Android emulator needs special IP for host's localhost
-    host = 'http://10.0.2.2:8080';
-  } else {
-    // iOS simulator and desktop can use localhost
-    host = 'http://localhost:8080';
-  }
-
-  // Updated base URL to use the new API path
-  final baseUrl = '$host/api/v1/users';
+  // Use the centralized API configuration
+  final baseUrl = ApiConfig().getApiUrl('users');
   developer.log('Using API base URL: $baseUrl',
       name: 'user_profile_datasource');
 

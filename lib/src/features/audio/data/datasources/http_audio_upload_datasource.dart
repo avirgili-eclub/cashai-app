@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:http/http.dart' as http;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/config/api_config.dart'; // Import the API config
 import 'audio_upload_datasource.dart';
 
 /// HTTP implementation of the AudioUploadDataSource interface
@@ -76,21 +77,8 @@ class HttpAudioUploadDataSource implements AudioUploadDataSource {
 
 /// Provider for the audio upload data source implementation
 final audioUploadDataSourceProvider = Provider<AudioUploadDataSource>((ref) {
-  // Choose the correct host based on platform, following the same pattern as in firebase_balance_datasource.dart
-  String host;
-
-  if (kIsWeb) {
-    // Web uses the current origin
-    host = 'http://localhost:8080';
-  } else if (Platform.isAndroid) {
-    // Android emulator needs special IP for host's localhost
-    host = 'http://10.0.2.2:8080';
-  } else {
-    // iOS simulator and desktop can use localhost
-    host = 'http://localhost:8080';
-  }
-
-  final baseUrl = host;
+  // Use the centralized API configuration
+  final baseUrl = ApiConfig().getApiUrl('invoice');
   developer.log('Using API base URL for audio uploads: $baseUrl',
       name: 'audio_upload');
 

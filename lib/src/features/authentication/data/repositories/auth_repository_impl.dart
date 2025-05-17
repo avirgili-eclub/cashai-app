@@ -10,6 +10,7 @@ import '../../domain/dtos/user_registration_dto.dart';
 import '../../domain/models/auth_response.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../../domain/app_user.dart';
+import '../../../../core/config/api_config.dart'; // Import ApiConfig
 
 // Add part directive for generated code
 part 'auth_repository_impl.g.dart';
@@ -347,22 +348,11 @@ FirebaseAuth firebaseAuth(FirebaseAuthRef ref) {
 // Convert repository provider to generated provider
 @Riverpod(keepAlive: true)
 AuthRepository authRepository(AuthRepositoryRef ref) {
-  // Choose the correct host based on platform
-  String host;
+  // Use the centralized ApiConfig to get the base host URL
+  final host = ApiConfig().getBaseHost();
 
-  if (kIsWeb) {
-    // Web uses the current origin
-    host = 'http://localhost:8080';
-  } else if (Platform.isAndroid) {
-    // Android emulator needs special IP for host's localhost
-    host = 'http://10.0.2.2:8080';
-  } else {
-    // iOS simulator and desktop can use localhost
-    host = 'http://localhost:8080';
-  }
-
-  final usersBaseUrl = '$host/api/v1/users'; // For registration
-  final authBaseUrl = '$host/api/v1/auth'; // For login
+  final usersBaseUrl = '${host}/api/v1/users'; // For registration
+  final authBaseUrl = '${host}/api/v1/auth'; // For login
 
   developer.log('Using Registration API base URL: $usersBaseUrl',
       name: 'auth_repository_provider');

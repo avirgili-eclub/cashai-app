@@ -6,7 +6,7 @@ part of 'firebase_balance_datasource.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$balanceDataSourceHash() => r'cfbf2e743ded17e929ace289c71aade303ce0cd8';
+String _$balanceDataSourceHash() => r'cc6cdba27871555eb24a90c4bcacb6a5c94212f3';
 
 /// See also [balanceDataSource].
 @ProviderFor(balanceDataSource)

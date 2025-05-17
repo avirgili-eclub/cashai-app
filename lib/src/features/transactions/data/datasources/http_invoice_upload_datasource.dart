@@ -1,8 +1,9 @@
 import 'dart:developer' as developer;
 import 'dart:io';
 import 'package:flutter/foundation.dart' show kIsWeb;
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/config/api_config.dart'; // Import the API config
 import 'invoice_upload_datasource.dart';
 
 class HttpInvoiceUploadDataSource implements InvoiceUploadDataSource {
@@ -72,22 +73,10 @@ class HttpInvoiceUploadDataSource implements InvoiceUploadDataSource {
 
 final invoiceUploadDataSourceProvider =
     Provider<InvoiceUploadDataSource>((ref) {
-  // Choose the correct host based on platform - same as in firebase_balance_datasource.dart
-  String host;
-
-  if (kIsWeb) {
-    // Web uses the current origin
-    host = 'http://localhost:8080';
-  } else if (Platform.isAndroid) {
-    // Android emulator needs special IP for host's localhost
-    host = 'http://10.0.2.2:8080';
-  } else {
-    // iOS simulator and desktop can use localhost
-    host = 'http://localhost:8080';
-  }
-
-  final baseUrl = '$host/api/v1/invoice';
-  developer.log('Using Invoice API base URL: $baseUrl', name: 'invoice_upload');
+  // Use the centralized API configuration
+  final baseUrl = ApiConfig().getApiUrl('invoice');
+  developer.log('Using API base URL for invoice uploads: $baseUrl',
+      name: 'invoice_upload');
 
   return HttpInvoiceUploadDataSource(baseUrl: baseUrl);
 });

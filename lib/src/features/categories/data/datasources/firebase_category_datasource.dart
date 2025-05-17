@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../../core/auth/providers/user_session_provider.dart';
+import '../../../../core/config/api_config.dart'; // Import the API config
 import '../../domain/models/custom_category_request.dart';
 
 part 'firebase_category_datasource.g.dart';
@@ -171,21 +172,8 @@ class FirebaseCategoryDataSource {
 
 @riverpod
 FirebaseCategoryDataSource categoryDataSource(CategoryDataSourceRef ref) {
-  // Choose the correct host based on platform
-  String host;
-
-  if (kIsWeb) {
-    // Web uses the current origin
-    host = 'http://localhost:8080';
-  } else if (Platform.isAndroid) {
-    // Android emulator needs special IP for host's localhost
-    host = 'http://10.0.2.2:8080';
-  } else {
-    // iOS simulator and desktop can use localhost
-    host = 'http://localhost:8080';
-  }
-
-  final baseUrl = '$host/api/v1/custom_category';
+  // Use the centralized API configuration
+  final baseUrl = ApiConfig().getApiUrl('custom_category');
   developer.log('Using API base URL: $baseUrl', name: 'category_datasource');
 
   // Get the userSessionNotifier to access the authentication token

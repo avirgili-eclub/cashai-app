@@ -7,7 +7,7 @@ part of 'firebase_category_datasource.dart';
 // **************************************************************************
 
 String _$categoryDataSourceHash() =>
-    r'42344035b05937957c884e4a8cb189baf87108a9';
+    r'951e5b6871f4d8e181ddc0671b3312fcc101b3c4';
 
 /// See also [categoryDataSource].
 @ProviderFor(categoryDataSource)

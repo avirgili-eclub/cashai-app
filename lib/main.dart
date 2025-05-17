@@ -6,6 +6,7 @@ import 'package:intl/intl.dart'; // Importamos intl para formateo de números
 import 'package:intl/date_symbol_data_local.dart'; // Para inicializar locales
 import 'package:numia/firebase_options.dart';
 import 'package:numia/src/app.dart';
+import 'package:numia/src/core/config/api_config.dart'; // Import the API config
 import 'package:numia/src/core/styles/app_styles.dart';
 import 'package:numia/src/localization/string_hardcoded.dart';
 // ignore:depend_on_referenced_packages
@@ -26,6 +27,20 @@ Future<void> main() async {
 
   // Set the default number format locale
   Intl.defaultLocale = 'es_PY';
+
+  // Initialize the API configuration
+  // Para forzar el uso de la URL de producción, establece isProduction como true
+  // O usa const bool forceProduction = true; para pruebas de producción mientras estás en desarrollo
+  const bool forceProduction = false; // Forzar modo producción para pruebas
+  ApiConfig().init(
+    isProduction: forceProduction || kReleaseMode,
+    // La URL personalizada solo debe usarse si realmente necesitas una URL diferente
+    // Si comentas esta línea, se usará la URL configurada en ApiConfig basada en isProduction
+    // customBaseUrl: 'https://dev.ucashai.app',
+  );
+
+  // Mostrar la URL base que se está usando para verificar
+  debugPrint('API URL base en uso: ${ApiConfig().getBaseHost()}');
 
   // * Entry point of the app
   runApp(const ProviderScope(
