@@ -135,13 +135,19 @@ class AudioController extends _$AudioController {
             name: 'audio_controller');
         state = AudioRecordingState.error;
         return;
-      }
-
-      // Get user ID
+      } // Get user session - we need the token for authentication
       final userSession = ref.read(userSessionNotifierProvider);
+      final token = userSession.token;
       final userId = userSession.userId;
 
-      // Updated check for nullable userId
+      // We need both token and userId to be valid
+      if (token == null || token.isEmpty) {
+        developer.log('Token is null or empty, cannot upload',
+            name: 'audio_controller');
+        state = AudioRecordingState.error;
+        return;
+      }
+
       if (userId == null || userId.isEmpty) {
         developer.log('User ID is null or empty, cannot upload',
             name: 'audio_controller');
@@ -149,12 +155,15 @@ class AudioController extends _$AudioController {
         return;
       }
 
-      // Upload the file - now with category ID
+      // Upload the file - use token for authentication
+      // Note: We're passing the token in the userId field of the repository
+      // This is a temporary solution to maintain compatibility with the interface
       final repository = ref.read(audioRepositoryProvider);
       final response = await repository.uploadAudio(
         audioFile: audioFile,
-        userId: userId,
+        userId: token, // Using the token for authentication instead of userId
         categoryId: categoryId, // Pass the categoryId if provided
+        sharedGroupId: null, // Can be added in the future if needed
       );
 
       developer.log('Upload completed with response: $response',
