@@ -99,7 +99,8 @@ class DashboardScreen extends ConsumerWidget {
                 ),
               ), // Container with fixed height for the transactions list
               Container(
-                height: 400, // Increased height to show more transactions
+                height:
+                    430, // Increased height to show more transactions completely
                 padding: const EdgeInsets.symmetric(horizontal: 16.0),
                 child: const RecentTransactionsList(
                   limit: 10, // Increased from 5 to 10
@@ -109,14 +110,14 @@ class DashboardScreen extends ConsumerWidget {
               ),
 
               // Extra space at bottom for navigation bar
-              const SizedBox(height: 60),
+              const SizedBox(height: 120),
             ],
           ),
         ),
       ),
       bottomNavigationBar: Container(
         // Adding a container around BottomNavBar to control its height
-        height: 80, // Increased height (was typically around 56-60px)
+        height: 70, // Increased height (was typically around 56-60px)
         child: const BottomNavBar(),
       ),
       floatingActionButton: Transform.translate(
