@@ -104,24 +104,23 @@ class TransactionsController extends _$TransactionsController {
         });
 
         return false;
-      }
-
-      // Call the repository method, which internally uses the userId
+      } // Call the repository method, which internally uses the userId
       // from when the repository was created
       final repository = ref.read(transactionRepositoryProvider);
       final success = await repository.deleteTransaction(transactionId);
 
       if (success) {
-        developer.log('Transaction deleted successfully, updating list',
+        developer.log('Transaction deleted successfully',
             name: 'transactions_controller');
 
-        // Update state to remove the deleted transaction
-        // Use optimistic update to avoid refetching
-        state.whenData((currentTransactions) {
-          final updatedList =
-              currentTransactions.where((t) => t.id != transactionId).toList();
-          state = AsyncData(updatedList);
-        });
+        // No optimistic update here since the UI is already updated by the widget
+        // This avoids the double deletion effect
+      } else if (state is AsyncData) {
+        // Only refresh the list in case of failure to resynchronize
+        developer.log(
+            'Deletion failed, refreshing transactions to resynchronize',
+            name: 'transactions_controller');
+        refreshTransactions();
       }
 
       return success;
