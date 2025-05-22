@@ -1,16 +1,16 @@
 import 'dart:developer' as developer;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart'; // Add this import
+import 'package:go_router/go_router.dart';
 import '../../../../core/auth/providers/user_session_provider.dart';
 import '../../../../core/styles/app_styles.dart';
-import '../../../../routing/app_router.dart'; // Add this import for AppRoute
+import '../../../../routing/app_router.dart';
+import '../../domain/services/dashboard_data_service.dart'; // Import the new service
 import '../controllers/balance_controller.dart';
-import '../controllers/transaction_controller.dart'; // Add this import
 import '../widgets/app_header.dart';
 import '../widgets/balance_card.dart';
 import '../widgets/collapsible_actions_card.dart';
-import '../widgets/recent_transactions_list.dart'; // Add import for RecentTransactionsList
+import '../widgets/recent_transactions_list.dart';
 import '../widgets/bottom_nav_bar.dart';
 import '../widgets/send_audio_button.dart';
 
@@ -48,7 +48,10 @@ class DashboardScreen extends ConsumerWidget {
       body: RefreshIndicator(
         onRefresh: () {
           developer.log('Manual refresh triggered', name: 'dashboard_screen');
-          return ref.read(balanceControllerProvider.notifier).refreshBalance();
+          // Use the coordinating service to refresh all data
+          return ref
+              .read(dashboardDataServiceProvider.notifier)
+              .refreshAllData();
         },
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
@@ -123,15 +126,11 @@ class DashboardScreen extends ConsumerWidget {
         offset: const Offset(0, 15), // Positive y value moves it down
         child: SendAudioButton(
           onTransactionAdded: () {
-            // Refresh both the transactions list and the balance card
-            developer.log('Audio sent successfully, refreshing data',
+            // Use the coordinating service to refresh all data
+            developer.log(
+                'Audio sent successfully, refreshing all data using service',
                 name: 'dashboard_screen');
-            // Refresh balance
-            ref.read(balanceControllerProvider.notifier).refreshBalance();
-            // Refresh transactions
-            ref
-                .read(transactionsControllerProvider.notifier)
-                .refreshTransactions();
+            ref.read(dashboardDataServiceProvider.notifier).refreshAllData();
           },
         ),
       ),

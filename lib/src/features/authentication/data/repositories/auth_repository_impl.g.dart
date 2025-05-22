@@ -22,7 +22,7 @@ final firebaseAuthProvider = Provider<FirebaseAuth>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef FirebaseAuthRef = ProviderRef<FirebaseAuth>;
-String _$authRepositoryHash() => r'9517a6b3ea9a492f0bc925753eaef0c1f0abface';
+String _$authRepositoryHash() => r'd2b7fe19dc3aa06c0b24d9486958128bae20a7b4';
 
 /// See also [authRepository].
 @ProviderFor(authRepository)

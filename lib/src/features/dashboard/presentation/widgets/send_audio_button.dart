@@ -227,13 +227,4 @@ class _SendAudioButtonState extends ConsumerState<SendAudioButton>
       },
     );
   }
-
-  void _handleSuccessfulAudioSubmission() {
-    // ...existing audio submission logic...
-
-    // Call the callback if provided
-    if (widget.onTransactionAdded != null) {
-      widget.onTransactionAdded!();
-    }
-  }
 }
