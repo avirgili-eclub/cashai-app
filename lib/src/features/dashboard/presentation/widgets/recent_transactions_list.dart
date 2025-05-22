@@ -44,10 +44,10 @@ class RecentTransactionsList extends ConsumerWidget {
             ),
           );
         }
-
         return ListView.builder(
           shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
+          physics:
+              const AlwaysScrollableScrollPhysics(), // Changed to allow scrolling
           itemCount: displayTransactions.length,
           itemBuilder: (context, index) {
             return DismissibleTransactionItem(

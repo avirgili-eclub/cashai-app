@@ -97,14 +97,12 @@ class DashboardScreen extends ConsumerWidget {
                     ),
                   ],
                 ),
-              ),
-
-              // Container with fixed height for the transactions list
+              ), // Container with fixed height for the transactions list
               Container(
-                height: 280,
+                height: 400, // Increased height to show more transactions
                 padding: const EdgeInsets.symmetric(horizontal: 16.0),
                 child: const RecentTransactionsList(
-                  limit: 5,
+                  limit: 10, // Increased from 5 to 10
                   showEmpty: true,
                   emptyMessage: 'No hay transacciones recientes',
                 ),
