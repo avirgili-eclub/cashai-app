@@ -8,6 +8,7 @@ import '../../../../core/styles/app_styles.dart';
 import '../../../../routing/app_router.dart';
 import '../../domain/services/dashboard_data_service.dart';
 import '../controllers/balance_controller.dart';
+import '../controllers/transaction_controller.dart';
 import '../widgets/app_header.dart';
 import '../widgets/balance_card.dart';
 import '../widgets/collapsible_actions_card.dart';
@@ -82,7 +83,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           .read(dashboardDataServiceProvider.notifier)
           .refreshAllData()
           .timeout(
-        const Duration(seconds: 10),
+        const Duration(seconds: 60),
         onTimeout: () {
           developer.log('Data loading timeout exceeded',
               name: 'dashboard_screen');
@@ -90,8 +91,14 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         },
       );
 
+      // First wait for balance data to be loaded
+      await ref.read(balanceControllerProvider.future);
+
+      // Then wait for transactions data to be loaded
+      await ref.read(transactionsControllerProvider.future);
+
       // Add a small delay to ensure data is properly displayed
-      await Future.delayed(const Duration(milliseconds: 300));
+      await Future.delayed(const Duration(microseconds: 800));
 
       if (mounted) {
         // Start animation out instead of immediately hiding
@@ -127,7 +134,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   Widget _buildSplashScreen(BuildContext context) {
     return AnimatedOpacity(
       opacity: _isAnimatingOut ? 0.0 : 1.0,
-      duration: const Duration(milliseconds: 500),
+      duration: const Duration(seconds: 1),
       onEnd: () {
         // When animation completes, fully hide splash
         if (_isAnimatingOut && mounted) {
@@ -161,33 +168,26 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             'force=$_forceShowSplash, animating=$_isAnimatingOut, combined=$showSplash',
         name: 'dashboard_screen');
 
-    // Only show splash screen if needed
-    if (showSplash) {
-      return _buildSplashScreen(context);
-    }
-
-    return Scaffold(
+    // Create the dashboard content
+    final dashboardContent = Scaffold(
       appBar: AppBar(
         title: const Text('CashAI'),
         backgroundColor: AppStyles.primaryColor,
         foregroundColor: Colors.white,
-        // Move profile icon to the leading position
         leading: IconButton(
           icon: const Icon(Icons.person),
           onPressed: () => context.pushNamed(AppRoute.userProfile.name),
         ),
         actions: [
-          // Add notification bell icon without any action for now
           IconButton(
             icon: const Icon(Icons.notifications),
-            onPressed: null, // Disabled for now, will be implemented later
+            onPressed: null,
           ),
         ],
       ),
       body: RefreshIndicator(
         onRefresh: () {
           developer.log('Manual refresh triggered', name: 'dashboard_screen');
-          // Use the coordinating service to refresh all data
           return ref
               .read(dashboardDataServiceProvider.notifier)
               .refreshAllData();
@@ -197,15 +197,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Use username from session if available, otherwise fallback to "Usuario"
               AppHeader(userName: userSession.username ?? 'Usuario'),
               _buildBalanceCardWithErrorHandler(ref),
               const SizedBox(height: 16),
-              // New collapsible card that contains both QuickAction and Categories sections
               const CollapsibleActionsCard(),
               const SizedBox(height: 24),
-
-              // Title section for Recent Transactions
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16.0),
                 child: Row(
@@ -236,44 +232,53 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   ],
                 ),
               ),
-              // Container with fixed height for the transactions list
               Container(
-                height:
-                    420, // Increased height to show more transactions completely
+                height: 420,
                 padding: const EdgeInsets.symmetric(horizontal: 16.0),
                 child: const RecentTransactionsList(
-                  limit: 10, // Increased from 5 to 10
+                  limit: 10,
                   showEmpty: true,
                   emptyMessage: 'No hay transacciones recientes',
                 ),
               ),
-
-              // Extra space at bottom for navigation bar
               const SizedBox(height: 40),
             ],
           ),
         ),
       ),
       bottomNavigationBar: SizedBox(
-        // Adding a container around BottomNavBar to control its height
-        height: 70, // Increased height (was typically around 56-60px)
+        height: 70,
         child: const BottomNavBar(),
       ),
       floatingActionButton: Transform.translate(
-        // Offsetting the button position
-        offset: const Offset(0, 15), // Positive y value moves it down
+        offset: const Offset(0, 15),
         child: SendAudioButton(
           onTransactionAdded: () {
-            // Use the coordinating service to refresh all data
-            developer.log(
-                'Audio sent successfully, refreshing all data using service',
-                name: 'dashboard_screen');
             ref.read(dashboardDataServiceProvider.notifier).refreshAllData();
           },
         ),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
     );
+
+    // Only show splash screen if needed, otherwise show the dashboard
+    if (showSplash) {
+      // Create the dashboard OFFSCREEN to force data rendering
+      return Stack(
+        children: [
+          // Hide the dashboard underneath by setting opacity to 0
+          Opacity(
+            opacity: 0.0,
+            child: dashboardContent,
+          ),
+          // Show the splash screen on top
+          _buildSplashScreen(context),
+        ],
+      );
+    }
+
+    // Once splash is dismissed, show the already-built dashboard
+    return dashboardContent;
   }
 
   // Wrap BalanceCard with error handling for debugging
