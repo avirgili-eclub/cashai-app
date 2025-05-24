@@ -1,4 +1,5 @@
 import 'dart:developer' as developer;
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -26,6 +27,9 @@ class DashboardScreen extends ConsumerStatefulWidget {
 class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   bool _isDataLoading = false;
   bool _forceShowSplash = true; // Add this flag to force splash on first build
+  bool _isAnimatingOut =
+      false; // Add a boolean to track if animation is in progress
+  Timer? _splashHideTimer; // Add a timer field for splash screen auto-hide
 
   @override
   void initState() {
@@ -34,6 +38,19 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     // Always force splash on first build for smoother transition
     _forceShowSplash = true;
     _isDataLoading = true;
+
+    // Set a safety timer to force-hide splash after a maximum time
+    _splashHideTimer = Timer(const Duration(seconds: 15), () {
+      if (mounted) {
+        developer.log('Safety timer triggered to hide splash screen',
+            name: 'dashboard_screen');
+        setState(() {
+          _isAnimatingOut = true;
+          _isDataLoading = false;
+          _forceShowSplash = false;
+        });
+      }
+    });
 
     // Check splash status after frame is built
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -47,48 +64,84 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     });
   }
 
+  @override
+  void dispose() {
+    // Cancel timer on dispose
+    _splashHideTimer?.cancel();
+    super.dispose();
+  }
+
   // Method to load all data and hide splash when finished
   Future<void> _loadInitialData() async {
     developer.log('Loading initial dashboard data after login',
         name: 'dashboard_screen');
 
     try {
-      // Load all dashboard data
-      await ref.read(dashboardDataServiceProvider.notifier).refreshAllData();
+      // Set a timeout for data loading to prevent the splash from being stuck
+      await ref
+          .read(dashboardDataServiceProvider.notifier)
+          .refreshAllData()
+          .timeout(
+        const Duration(seconds: 10),
+        onTimeout: () {
+          developer.log('Data loading timeout exceeded',
+              name: 'dashboard_screen');
+          throw TimeoutException('Tiempo de carga excedido');
+        },
+      );
 
       // Add a small delay to ensure data is properly displayed
-      await Future.delayed(const Duration(milliseconds: 500));
+      await Future.delayed(const Duration(milliseconds: 300));
 
-      // Hide splash when loading is complete - ensure this runs
       if (mounted) {
-        developer.log('Setting state to hide splash screen',
-            name: 'dashboard_screen');
+        // Start animation out instead of immediately hiding
         setState(() {
+          _isAnimatingOut = true;
           _isDataLoading = false;
-          _forceShowSplash = false;
         });
-        // Always hide splash - this was commented out in your version
-        ref.read(postLoginSplashStateProvider.notifier).hideSplash();
-        developer.log('Data loading complete, splash hidden',
+
+        // Let the animation handle splash state
+        developer.log('Starting animation to hide splash screen',
             name: 'dashboard_screen');
       }
     } catch (e) {
-      // In case of error, still hide the splash
+      // In case of error, still start the animation out
       if (mounted) {
-        developer.log('Error during data loading, hiding splash anyway: $e',
-            name: 'dashboard_screen', error: e);
+        developer.log(
+            'Error during data loading, hiding splash with animation: $e',
+            name: 'dashboard_screen',
+            error: e);
         setState(() {
+          _isAnimatingOut = true;
           _isDataLoading = false;
           _forceShowSplash = false;
         });
-        ref.read(postLoginSplashStateProvider.notifier).hideSplash();
       }
     }
+
+    // When loading completes, cancel the safety timer since we no longer need it
+    _splashHideTimer?.cancel();
   }
 
-  // Use the shared splash screen widget
+  // Use the shared splash screen widget with animation
   Widget _buildSplashScreen(BuildContext context) {
-    return const AppSplashScreen();
+    return AnimatedOpacity(
+      opacity: _isAnimatingOut ? 0.0 : 1.0,
+      duration: const Duration(milliseconds: 500),
+      onEnd: () {
+        // When animation completes, fully hide splash
+        if (_isAnimatingOut && mounted) {
+          setState(() {
+            _forceShowSplash = false;
+            _isAnimatingOut = false;
+          });
+          ref.read(postLoginSplashStateProvider.notifier).hideSplash();
+          developer.log('Animation complete, splash hidden',
+              name: 'dashboard_screen');
+        }
+      },
+      child: const AppSplashScreen(),
+    );
   }
 
   @override
@@ -98,14 +151,17 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
     // Check all splash conditions
     final showSplashFromProvider = ref.watch(postLoginSplashStateProvider);
-    final showSplash =
-        showSplashFromProvider || _isDataLoading || _forceShowSplash;
+    final showSplash = showSplashFromProvider ||
+        _isDataLoading ||
+        _forceShowSplash ||
+        _isAnimatingOut;
 
     developer.log(
-        'Splash state: provider=$showSplashFromProvider, local=$_isDataLoading, force=$_forceShowSplash, combined=$showSplash',
+        'Splash state: provider=$showSplashFromProvider, local=$_isDataLoading, ' +
+            'force=$_forceShowSplash, animating=$_isAnimatingOut, combined=$showSplash',
         name: 'dashboard_screen');
 
-    // Only show splash screen if needed - make sure this condition works correctly
+    // Only show splash screen if needed
     if (showSplash) {
       return _buildSplashScreen(context);
     }

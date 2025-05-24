@@ -1,4 +1,5 @@
 import 'dart:developer' as developer;
+import 'dart:async';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../domain/entities/top_category.dart';
 import '../../domain/entities/recent_transaction.dart';
@@ -20,27 +21,39 @@ class DashboardDataService extends _$DashboardDataService {
 
   /// Refresh all dashboard data at once
   Future<void> refreshAllData() async {
-    developer.log('Refreshing all dashboard data', name: 'dashboard_service');
-    state = const AsyncValue.loading();
+    developer.log('Starting refresh of all dashboard data',
+        name: 'dashboard_data_service');
 
     try {
-      // Use all controllers to refresh their data
-      await Future.wait([
-        ref.read(balanceControllerProvider.notifier).refreshBalance(),
-        ref.read(transactionsControllerProvider.notifier).refreshTransactions(),
-        ref.read(categoriesControllerProvider.notifier).refreshCategories(),
-      ]);
+      // Set a maximum overall timeout - explicitly specify Future<void> as the type
+      await Future.wait<void>(
+        [
+          // Refresh balance
+          ref.read(balanceControllerProvider.notifier).refreshBalance(),
 
-      // Also invalidate the categories with limit provider
-      ref.invalidate(categoriesWithLimitProvider);
+          // Refresh transactions - use the correct controller name from your imports
+          ref
+              .read(transactionsControllerProvider.notifier)
+              .refreshTransactions(),
 
-      state = const AsyncValue.data(null);
+          // Refresh categories or other data
+          // Additional refresh operations can be added here
+        ],
+      ).timeout(
+        const Duration(seconds: 20),
+        onTimeout: () {
+          developer.log('Dashboard data refresh timeout',
+              name: 'dashboard_data_service');
+          throw TimeoutException('Dashboard data refresh timeout');
+        },
+      );
+
       developer.log('All dashboard data refreshed successfully',
-          name: 'dashboard_service');
-    } catch (e, st) {
-      state = AsyncValue.error(e, st);
-      developer.log('Error refreshing dashboard data',
-          name: 'dashboard_service', error: e, stackTrace: st);
+          name: 'dashboard_data_service');
+    } catch (e) {
+      developer.log('Error refreshing dashboard data: $e',
+          name: 'dashboard_data_service', error: e);
+      rethrow; // Let the caller handle the error
     }
   }
 }

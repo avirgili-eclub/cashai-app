@@ -108,8 +108,15 @@ class AuthController extends StateNotifier<AuthState> {
       developer.log('Splash screen activated for login',
           name: 'auth_controller');
 
-      // Make the API call with proper error handling
-      final response = await _authRepository.login(email, password);
+      // Make the API call with proper error handling and timeout
+      final response = await _authRepository.login(email, password).timeout(
+        const Duration(seconds: 45),
+        onTimeout: () {
+          developer.log('Login API call timeout', name: 'auth_controller');
+          throw TimeoutException(
+              'La conexión ha tardado demasiado tiempo. Intente nuevamente.');
+        },
+      );
 
       // Update user session with the received data
       if (response.containsKey('userId')) {
@@ -144,6 +151,17 @@ class AuthController extends StateNotifier<AuthState> {
       );
 
       return response;
+    } on TimeoutException catch (e) {
+      developer.log('Login timeout: $e', name: 'auth_controller');
+
+      // Hide splash on timeout
+      _ref.read(postLoginSplashStateProvider.notifier).hideSplash();
+
+      state = state.copyWith(
+        isLoading: false,
+        error: e.toString(),
+      );
+      return null;
     } catch (e, stack) {
       developer.log('Login error: $e',
           name: 'auth_controller', error: e, stackTrace: stack);
