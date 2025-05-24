@@ -77,6 +77,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     developer.log('Loading initial dashboard data after login',
         name: 'dashboard_screen');
 
+    // Ensure keyboard is hidden when loading dashboard data
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      FocusManager.instance.primaryFocus?.unfocus();
+    });
+
     try {
       // Set a timeout for data loading to prevent the splash from being stuck
       await ref

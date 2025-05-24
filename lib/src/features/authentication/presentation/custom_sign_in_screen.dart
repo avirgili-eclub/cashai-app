@@ -68,6 +68,9 @@ class _CustomSignInScreenState extends ConsumerState<CustomSignInScreen> {
     // Guard against multiple submits
     if (_isLoading) return;
 
+    // Hide keyboard immediately when submitting form
+    FocusScope.of(context).unfocus();
+
     setState(() {
       _isLoading = true;
     });
