@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../features/audio/presentation/controllers/audio_controller.dart';
@@ -7,11 +8,14 @@ class SendAudioButton extends ConsumerStatefulWidget {
   final String? categoryId;
   // Add callback for when a transaction is successfully added
   final VoidCallback? onTransactionAdded;
+  // Add parameter for maximum recording duration
+  final int maxRecordingDurationInSeconds;
 
   const SendAudioButton({
     Key? key,
     this.categoryId,
     this.onTransactionAdded,
+    this.maxRecordingDurationInSeconds = 12, // Default to 12 seconds
   }) : super(key: key);
 
   @override
@@ -23,6 +27,8 @@ class _SendAudioButtonState extends ConsumerState<SendAudioButton>
   bool _isRecording = false;
   late AnimationController _animationController;
   late Animation<double> _pulseAnimation;
+  Timer? _recordingTimer;
+  int _currentRecordingSeconds = 0;
 
   @override
   void initState() {
@@ -51,8 +57,62 @@ class _SendAudioButtonState extends ConsumerState<SendAudioButton>
 
   @override
   void dispose() {
+    _recordingTimer?.cancel();
     _animationController.dispose();
     super.dispose();
+  }
+
+  void _startRecordingWithTimer() {
+    _currentRecordingSeconds = 0;
+
+    // Start the recording
+    ref.read(audioControllerProvider.notifier).startRecording();
+
+    // Start the timer to limit recording duration
+    _recordingTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      setState(() {
+        _currentRecordingSeconds++;
+      });
+
+      // If maximum duration reached, stop recording automatically
+      if (_currentRecordingSeconds >= widget.maxRecordingDurationInSeconds) {
+        _stopRecording();
+      }
+    });
+  }
+
+  void _stopRecording() {
+    // Cancel the timer
+    _recordingTimer?.cancel();
+    _recordingTimer = null;
+
+    setState(() {
+      _isRecording = false;
+      _currentRecordingSeconds = 0;
+    });
+
+    // Stop recording and upload with category ID if provided
+    if (widget.categoryId != null) {
+      ref
+          .read(audioControllerProvider.notifier)
+          .stopRecordingAndUploadWithCategoryId(widget.categoryId!);
+    } else {
+      ref.read(audioControllerProvider.notifier).stopRecordingAndUpload();
+    }
+  }
+
+  void _cancelRecording() {
+    // Cancel the timer
+    _recordingTimer?.cancel();
+    _recordingTimer = null;
+
+    setState(() {
+      _isRecording = false;
+      _currentRecordingSeconds = 0;
+    });
+
+    // Cancel recording
+    ref.read(audioControllerProvider.notifier).cancelRecording();
   }
 
   @override
@@ -76,28 +136,18 @@ class _SendAudioButtonState extends ConsumerState<SendAudioButton>
         setState(() {
           _isRecording = true;
         });
-        // Start recording
-        ref.read(audioControllerProvider.notifier).startRecording();
+        // Start recording with timer
+        _startRecordingWithTimer();
       },
       onLongPressEnd: (_) {
-        setState(() {
-          _isRecording = false;
-        });
-        // Stop recording and upload with category ID if provided
-        if (widget.categoryId != null) {
-          ref
-              .read(audioControllerProvider.notifier)
-              .stopRecordingAndUploadWithCategoryId(widget.categoryId!);
-        } else {
-          ref.read(audioControllerProvider.notifier).stopRecordingAndUpload();
+        if (_isRecording) {
+          _stopRecording();
         }
       },
       onLongPressCancel: () {
-        setState(() {
-          _isRecording = false;
-        });
-        // Cancel recording
-        ref.read(audioControllerProvider.notifier).cancelRecording();
+        if (_isRecording) {
+          _cancelRecording();
+        }
       },
       child: SizedBox(
         width: 72, // Explicit size for the FloatingActionButton
@@ -136,7 +186,6 @@ class _SendAudioButtonState extends ConsumerState<SendAudioButton>
       case AudioRecordingState.error:
         return Colors.redAccent;
       case AudioRecordingState.idle:
-      default:
         return Theme.of(context).primaryColor;
     }
   }
@@ -170,7 +219,6 @@ class _SendAudioButtonState extends ConsumerState<SendAudioButton>
           size: 32,
         );
       case AudioRecordingState.idle:
-      default:
         return const Icon(
           Icons.mic,
           key: ValueKey('mic_icon'),
@@ -181,6 +229,11 @@ class _SendAudioButtonState extends ConsumerState<SendAudioButton>
   }
 
   Widget _buildRecordingIcon() {
+    // Calculate progress as a percentage for visual feedback
+    double progress = _isRecording
+        ? (_currentRecordingSeconds / widget.maxRecordingDurationInSeconds)
+        : 0.0;
+
     return AnimatedBuilder(
       animation: _pulseAnimation,
       builder: (context, child) {
@@ -191,6 +244,14 @@ class _SendAudioButtonState extends ConsumerState<SendAudioButton>
           child: Stack(
             alignment: Alignment.center,
             children: [
+              // Timer countdown indicator
+              if (_isRecording)
+                CircularProgressIndicator(
+                  value: progress,
+                  strokeWidth: 2.0,
+                  color: Colors.white,
+                  backgroundColor: Colors.white.withOpacity(0.2),
+                ),
               // Outer pulsating circle
               Transform.scale(
                 scale: _pulseAnimation.value,
