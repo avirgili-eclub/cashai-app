@@ -1,18 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:country_code_picker/country_code_picker.dart'; // Add this package
+import 'package:country_code_picker/country_code_picker.dart';
 import 'package:numia/src/constants/app_sizes.dart';
 import 'package:numia/src/core/styles/app_styles.dart';
 import 'dart:io' show Platform;
-import 'dart:async'; // Add this import for TimeoutException
+import 'dart:async';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_ui_oauth_google/firebase_ui_oauth_google.dart';
-import 'package:firebase_ui_oauth_apple/firebase_ui_oauth_apple.dart';
 import 'dart:developer' as developer;
 import '../../../core/auth/providers/user_session_provider.dart';
 import '../../../routing/app_router.dart';
 import '../presentation/controllers/auth_controller.dart';
+import '../../../features/dashboard/presentation/providers/post_login_splash_provider.dart';
+import '../../../widgets/app_splash_screen.dart';
 
 class CustomSignInScreen extends ConsumerStatefulWidget {
   const CustomSignInScreen({super.key});
@@ -26,11 +26,9 @@ class _CustomSignInScreenState extends ConsumerState<CustomSignInScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
-  // New controllers for additional fields
   final _phoneController = TextEditingController();
   final _usernameController = TextEditingController();
 
-  // Default country code for Paraguay
   String _selectedCountryCode = '+595';
   String _selectedCountryDialCode = '595';
 
@@ -55,7 +53,6 @@ class _CustomSignInScreenState extends ConsumerState<CustomSignInScreen> {
     });
   }
 
-  // Set username from email
   void _updateUsernameFromEmail(String email) {
     if (email.contains('@')) {
       final username = email.split('@')[0];
@@ -68,81 +65,77 @@ class _CustomSignInScreenState extends ConsumerState<CustomSignInScreen> {
       return;
     }
 
+    // Guard against multiple submits
+    if (_isLoading) return;
+
     setState(() {
       _isLoading = true;
     });
 
     try {
       if (_isLogin) {
-        // Handle login with our auth controller
+        // Handle login
         developer.log('Attempting login with email: ${_emailController.text}',
             name: 'custom_sign_in_screen');
 
-        // Add timeout to the login request
+        // Set splash state before API call
+        ref.read(postLoginSplashStateProvider.notifier).showSplash();
+        developer.log('Splash screen activated before login attempt',
+            name: 'custom_sign_in_screen');
+
         final loginFuture = ref.read(authControllerProvider.notifier).login(
               email: _emailController.text,
               password: _passwordController.text,
             );
 
-        // Wait for the login with a timeout
+        // Wait for login with timeout
         final response = await loginFuture.timeout(
           const Duration(seconds: 20),
           onTimeout: () {
+            ref.read(postLoginSplashStateProvider.notifier).hideSplash();
             throw TimeoutException(
                 'La conexión ha tardado demasiado tiempo. Verifique su conexión.');
           },
         );
 
-        if (context.mounted) {
-          if (response != null) {
-            // Log the successful login details for debugging
-            developer.log(
-                'Login successful, token received: ${response.containsKey('token')}',
-                name: 'custom_sign_in_screen');
+        // Check if still mounted after async operation
+        if (!mounted) return;
 
-            // Check if userId and token were properly set in the session
-            final session = ref.read(userSessionNotifierProvider);
-            developer.log(
-                'UserSession after login - userId: ${session.userId}, hasToken: ${session.token != null}',
-                name: 'custom_sign_in_screen');
+        if (response != null) {
+          developer.log(
+              'Login successful, token received: ${response.containsKey('token')}',
+              name: 'custom_sign_in_screen');
 
-            // Remove success notification SnackBar
+          // Ensure splash is visible
+          ref.read(postLoginSplashStateProvider.notifier).showSplash();
+          developer.log('Splash activated again before navigation',
+              name: 'custom_sign_in_screen');
 
-            if (context.mounted) {
-              developer.log('Navigating to dashboard after successful login',
-                  name: 'custom_sign_in_screen');
+          // Check mounted before UI operations
+          if (!mounted) return;
 
-              // Force the router to refresh its state
-              ref.invalidate(goRouterProvider);
+          // Navigate directly to dashboard - no need for intermediate splash
+          // since dashboard will show splash until data loads
+          ref.invalidate(goRouterProvider);
+          context.go('/dashboard');
+          developer.log('Navigation to dashboard initiated with splash active',
+              name: 'custom_sign_in_screen');
+        } else {
+          // Login failure handling
+          if (!mounted) return;
 
-              // Use a small delay to allow the router state to update
-              Future.delayed(const Duration(milliseconds: 500), () {
-                if (context.mounted) {
-                  // Try to navigate directly to dashboard
-                  try {
-                    context.go('/dashboard');
-                    developer.log('Navigation to dashboard initiated',
-                        name: 'custom_sign_in_screen');
-                  } catch (e) {
-                    developer.log('Navigation error: $e',
-                        name: 'custom_sign_in_screen', error: e);
-                  }
-                }
-              });
-            }
-          } else {
-            final error = ref.read(authControllerProvider).error;
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(error ?? 'Error al iniciar sesión'),
-                backgroundColor: Colors.red,
-              ),
-            );
-          }
+          ref.read(postLoginSplashStateProvider.notifier).hideSplash();
+
+          final error = ref.read(authControllerProvider).error;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(error ?? 'Error al iniciar sesión'),
+              backgroundColor: Colors.red,
+            ),
+          );
         }
       } else {
-        // Handle registration with our auth controller including new fields
-        // Add timeout to registration request too
+        // Handle registration
         final registerFuture =
             ref.read(authControllerProvider.notifier).registerUser(
                   email: _emailController.text,
@@ -152,7 +145,6 @@ class _CustomSignInScreenState extends ConsumerState<CustomSignInScreen> {
                   codigoIdentificador: _selectedCountryCode,
                 );
 
-        // Wait for registration with a timeout
         final response = await registerFuture.timeout(
           const Duration(seconds: 20),
           onTimeout: () {
@@ -161,160 +153,161 @@ class _CustomSignInScreenState extends ConsumerState<CustomSignInScreen> {
           },
         );
 
-        if (context.mounted) {
-          if (response != null) {
-            // Registration successful - switch to login mode
-            setState(() {
-              _isLogin = true;
-              // Don't clear email so user can proceed to login
-              _passwordController.clear();
-              _confirmPasswordController.clear();
-              _phoneController.clear();
-            });
+        if (!mounted) return;
 
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Registro exitoso. Por favor inicia sesión'),
-                backgroundColor: Colors.green,
-              ),
-            );
-          } else {
-            // Registration failed
-            final error = ref.read(authControllerProvider).error;
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(error ?? 'Error en el registro'),
-                backgroundColor: Colors.red,
-              ),
-            );
-          }
-        }
-      }
-    } on TimeoutException catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(e.message ??
-                'La conexión ha tardado demasiado tiempo. Por favor intenta de nuevo.'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Ha ocurrido un error: ${e.toString()}'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
-    }
-  }
+        if (response != null) {
+          setState(() {
+            _isLogin = true;
+            _passwordController.clear();
+            _confirmPasswordController.clear();
+            _phoneController.clear();
+          });
 
-  Future<void> _signInWithGoogle() async {
-    try {
-      setState(() {
-        _isLoading = true;
-      });
-      // Implementation will be added later
-      await Future.delayed(const Duration(seconds: 1));
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Inicio de sesión con Google exitoso')),
-        );
-      }
-    } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Error al iniciar sesión con Google'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
-    }
-  }
-
-  Future<void> _signInWithApple() async {
-    try {
-      setState(() {
-        _isLoading = true;
-      });
-
-      // Fixed implementation for Apple Sign-In
-      if (Platform.isIOS) {
-        // Use OAuthProvider directly from Firebase Auth instead of AppleProvider from UI package
-        final appleProvider = OAuthProvider('apple.com');
-
-        try {
-          // This is the correct way to use Apple sign-in with Firebase Auth
-          final auth = FirebaseAuth.instance;
-          final credential = await auth.signInWithProvider(appleProvider);
-
-          // Extract user data from the credential
-          final user = credential.user;
-          final displayName = user?.displayName;
-          final email = user?.email;
-
-          if (context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                  content: Text(
-                      'Inicio de sesión exitoso${displayName != null ? ' como $displayName' : ''}${email != null ? ' ($email)' : ''}')),
-            );
-            // Here you would navigate to your app's home screen
-            // Navigator.of(context).pushReplacementNamed('/dashboard');
-          }
-        } catch (e) {
-          if (context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Error con Apple Sign-In: ${e.toString()}'),
-                backgroundColor: Colors.red,
-              ),
-            );
-          }
-        }
-      } else {
-        // Show message that Apple Sign-In isn't available on this platform
-        if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text(
-                  'Inicio de sesión con Apple solo está disponible en dispositivos iOS'),
-              backgroundColor: Colors.orange,
+              content: Text('Registro exitoso. Por favor inicia sesión'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        } else {
+          final error = ref.read(authControllerProvider).error;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(error ?? 'Error en el registro'),
+              backgroundColor: Colors.red,
             ),
           );
         }
       }
+    } on TimeoutException catch (e) {
+      ref.read(postLoginSplashStateProvider.notifier).hideSplash();
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.message ??
+              'La conexión ha tardado demasiado tiempo. Por favor intenta de nuevo.'),
+          backgroundColor: Colors.red,
+        ),
+      );
     } catch (e) {
-      if (context.mounted) {
+      ref.read(postLoginSplashStateProvider.notifier).hideSplash();
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Ha ocurrido un error: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      if (!mounted) return;
+
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _signInWithGoogle() async {
+    if (_isLoading) return;
+
+    try {
+      setState(() {
+        _isLoading = true;
+      });
+
+      // Implementation will be added later
+      await Future.delayed(const Duration(seconds: 1));
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Inicio de sesión con Google exitoso')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Error al iniciar sesión con Google'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      if (!mounted) return;
+
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _signInWithApple() async {
+    if (_isLoading) return;
+
+    try {
+      setState(() {
+        _isLoading = true;
+      });
+
+      if (Platform.isIOS) {
+        final appleProvider = OAuthProvider('apple.com');
+
+        try {
+          final auth = FirebaseAuth.instance;
+          final credential = await auth.signInWithProvider(appleProvider);
+
+          final user = credential.user;
+          final displayName = user?.displayName;
+          final email = user?.email;
+
+          if (!mounted) return;
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                  'Inicio de sesión exitoso${displayName != null ? ' como $displayName' : ''}${email != null ? ' ($email)' : ''}'),
+            ),
+          );
+        } catch (e) {
+          if (!mounted) return;
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error con Apple Sign-In: ${e.toString()}'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      } else {
+        if (!mounted) return;
+
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error al iniciar sesión con Apple: ${e.toString()}'),
-            backgroundColor: Colors.red,
+          const SnackBar(
+            content: Text(
+                'Inicio de sesión con Apple solo está disponible en dispositivos iOS'),
+            backgroundColor: Colors.orange,
           ),
         );
       }
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error al iniciar sesión con Apple: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
     } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
+      if (!mounted) return;
+
+      setState(() {
+        _isLoading = false;
+      });
     }
   }
 
@@ -330,13 +323,12 @@ class _CustomSignInScreenState extends ConsumerState<CustomSignInScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // App Logo/Icon
-                  Icon(
-                    Icons.account_balance_wallet,
-                    size: 64,
-                    color: AppStyles.primaryColor,
+                  Image.asset(
+                    'assets/images/logo256.png',
+                    height: 128,
+                    width: 128,
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 0),
 
                   // Title
                   Text(

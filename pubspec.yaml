@@ -69,3 +69,4 @@ flutter:
   uses-material-design: true
   assets:
     - assets/time-tracking.svg
+    - assets/images/

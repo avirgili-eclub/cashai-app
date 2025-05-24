@@ -7,6 +7,7 @@ import '../../domain/dtos/user_registration_dto.dart';
 import '../../domain/models/auth_response.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../../data/repositories/auth_repository_impl.dart';
+import '../../../../features/dashboard/presentation/providers/post_login_splash_provider.dart';
 
 // Auth state for the controller
 class AuthState {
@@ -48,8 +49,10 @@ class AuthState {
 class AuthController extends StateNotifier<AuthState> {
   final AuthRepository _authRepository;
   final UserSessionNotifier _userSession;
+  final Ref _ref;
 
-  AuthController(this._authRepository, this._userSession) : super(AuthState());
+  AuthController(this._authRepository, this._userSession, this._ref)
+      : super(AuthState());
 
   Future<UserRegistrationResponse?> registerUser({
     required String email,
@@ -100,56 +103,39 @@ class AuthController extends StateNotifier<AuthState> {
     try {
       state = state.copyWith(isLoading: true, error: null);
 
-      // Create a completer to manually handle timeout
-      final completer = Completer<Map<String, dynamic>>();
+      // Set splash screen to show before login attempt
+      _ref.read(postLoginSplashStateProvider.notifier).showSplash();
+      developer.log('Splash screen activated for login',
+          name: 'auth_controller');
 
-      // Set up timeout
-      final timer = Timer(const Duration(seconds: 20), () {
-        if (!completer.isCompleted) {
-          completer.completeError(TimeoutException(
-              'Tiempo de espera agotado. Por favor, intente de nuevo más tarde.'));
-        }
-      });
+      // Make the API call with proper error handling
+      final response = await _authRepository.login(email, password);
 
-      // Make the API call
-      _authRepository.login(email, password).then((response) {
-        if (!completer.isCompleted) {
-          timer.cancel();
+      // Update user session with the received data
+      if (response.containsKey('userId')) {
+        final userId = response['userId'].toString();
+        final token = response['token']?.toString();
+        final username = response['username']?.toString();
+        final userEmail = response['email']?.toString();
 
-          // Update user session with the received data
-          if (response.containsKey('userId')) {
-            final userId = response['userId'].toString();
-            final token = response['token']?.toString();
-            final username = response['username']?.toString();
-            final userEmail = response['email']?.toString();
+        developer.log(
+            'Login successful, setting user session with userId: $userId',
+            name: 'auth_controller');
 
-            developer.log(
-                'Setting user session with userId: $userId, token: ${token != null}',
-                name: 'auth_controller');
+        _userSession.setUserSession(
+          userId: userId,
+          token: token,
+          username: username,
+          email: userEmail,
+        );
 
-            _userSession.setUserSession(
-              userId: userId,
-              token: token,
-              username: username,
-              email: userEmail,
-            );
-          } else {
-            developer.log(
-                'Warning: Response does not contain userId key: $response',
-                name: 'auth_controller');
-          }
-
-          completer.complete(response);
-        }
-      }).catchError((error) {
-        if (!completer.isCompleted) {
-          timer.cancel();
-          completer.completeError(error);
-        }
-      });
-
-      // Wait for either completion or timeout
-      final response = await completer.future;
+        // Make sure splash screen is active
+        _ref.read(postLoginSplashStateProvider.notifier).showSplash();
+      } else {
+        developer.log(
+            'Warning: Response does not contain userId key: $response',
+            name: 'auth_controller');
+      }
 
       state = state.copyWith(
         isLoading: false,
@@ -161,6 +147,10 @@ class AuthController extends StateNotifier<AuthState> {
     } catch (e, stack) {
       developer.log('Login error: $e',
           name: 'auth_controller', error: e, stackTrace: stack);
+
+      // Hide splash on error
+      _ref.read(postLoginSplashStateProvider.notifier).hideSplash();
+
       state = state.copyWith(
         isLoading: false,
         error: e.toString(),
@@ -235,5 +225,6 @@ final authControllerProvider =
   return AuthController(
     ref.watch(authRepositoryProvider),
     ref.watch(userSessionNotifierProvider.notifier),
+    ref,
   );
 });

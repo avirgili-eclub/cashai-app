@@ -5,7 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/auth/providers/user_session_provider.dart';
 import '../../../../core/styles/app_styles.dart';
 import '../../../../routing/app_router.dart';
-import '../../domain/services/dashboard_data_service.dart'; // Import the new service
+import '../../domain/services/dashboard_data_service.dart';
 import '../controllers/balance_controller.dart';
 import '../widgets/app_header.dart';
 import '../widgets/balance_card.dart';
@@ -13,23 +13,106 @@ import '../widgets/collapsible_actions_card.dart';
 import '../widgets/recent_transactions_list.dart';
 import '../widgets/bottom_nav_bar.dart';
 import '../widgets/send_audio_button.dart';
+import '../providers/post_login_splash_provider.dart';
+import '../../../../../src/widgets/app_splash_screen.dart';
 
-class DashboardScreen extends ConsumerWidget {
+class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({Key? key}) : super(key: key);
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    developer.log('Building DashboardScreen', name: 'dashboard_screen');
+  ConsumerState<DashboardScreen> createState() => _DashboardScreenState();
+}
 
-    // Get the current user session
-    final userSession = ref.watch(userSessionNotifierProvider);
-    developer.log(
-        'Current userId in dashboard: ${userSession.userId}, username: ${userSession.username}',
+class _DashboardScreenState extends ConsumerState<DashboardScreen> {
+  bool _isDataLoading = false;
+  bool _forceShowSplash = true; // Add this flag to force splash on first build
+
+  @override
+  void initState() {
+    super.initState();
+
+    // Always force splash on first build for smoother transition
+    _forceShowSplash = true;
+    _isDataLoading = true;
+
+    // Check splash status after frame is built
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final showSplash = ref.read(postLoginSplashStateProvider);
+      developer.log(
+          'Splash state in initState: $showSplash, forcing show: $_forceShowSplash',
+          name: 'dashboard_screen');
+
+      // Begin loading data immediately, splash will be shown by build method
+      _loadInitialData();
+    });
+  }
+
+  // Method to load all data and hide splash when finished
+  Future<void> _loadInitialData() async {
+    developer.log('Loading initial dashboard data after login',
         name: 'dashboard_screen');
+
+    try {
+      // Load all dashboard data
+      await ref.read(dashboardDataServiceProvider.notifier).refreshAllData();
+
+      // Add a small delay to ensure data is properly displayed
+      await Future.delayed(const Duration(milliseconds: 500));
+
+      // Hide splash when loading is complete - ensure this runs
+      if (mounted) {
+        developer.log('Setting state to hide splash screen',
+            name: 'dashboard_screen');
+        setState(() {
+          _isDataLoading = false;
+          _forceShowSplash = false;
+        });
+        // Always hide splash - this was commented out in your version
+        ref.read(postLoginSplashStateProvider.notifier).hideSplash();
+        developer.log('Data loading complete, splash hidden',
+            name: 'dashboard_screen');
+      }
+    } catch (e) {
+      // In case of error, still hide the splash
+      if (mounted) {
+        developer.log('Error during data loading, hiding splash anyway: $e',
+            name: 'dashboard_screen', error: e);
+        setState(() {
+          _isDataLoading = false;
+          _forceShowSplash = false;
+        });
+        ref.read(postLoginSplashStateProvider.notifier).hideSplash();
+      }
+    }
+  }
+
+  // Use the shared splash screen widget
+  Widget _buildSplashScreen(BuildContext context) {
+    return const AppSplashScreen();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    developer.log('Building DashboardScreen', name: 'dashboard_screen');
+    final userSession = ref.watch(userSessionNotifierProvider);
+
+    // Check all splash conditions
+    final showSplashFromProvider = ref.watch(postLoginSplashStateProvider);
+    final showSplash =
+        showSplashFromProvider || _isDataLoading || _forceShowSplash;
+
+    developer.log(
+        'Splash state: provider=$showSplashFromProvider, local=$_isDataLoading, force=$_forceShowSplash, combined=$showSplash',
+        name: 'dashboard_screen');
+
+    // Only show splash screen if needed - make sure this condition works correctly
+    if (showSplash) {
+      return _buildSplashScreen(context);
+    }
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Numia'),
+        title: const Text('CashAI'),
         backgroundColor: AppStyles.primaryColor,
         foregroundColor: Colors.white,
         // Move profile icon to the leading position
@@ -58,7 +141,6 @@ class DashboardScreen extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Remove the debug information section
               // Use username from session if available, otherwise fallback to "Usuario"
               AppHeader(userName: userSession.username ?? 'Usuario'),
               _buildBalanceCardWithErrorHandler(ref),
@@ -97,7 +179,8 @@ class DashboardScreen extends ConsumerWidget {
                     ),
                   ],
                 ),
-              ), // Container with fixed height for the transactions list
+              ),
+              // Container with fixed height for the transactions list
               Container(
                 height:
                     420, // Increased height to show more transactions completely
@@ -115,7 +198,7 @@ class DashboardScreen extends ConsumerWidget {
           ),
         ),
       ),
-      bottomNavigationBar: Container(
+      bottomNavigationBar: SizedBox(
         // Adding a container around BottomNavBar to control its height
         height: 70, // Increased height (was typically around 56-60px)
         child: const BottomNavBar(),
@@ -175,7 +258,4 @@ class DashboardScreen extends ConsumerWidget {
       );
     }
   }
-
-  // I've removed the _showUserSelector method as it's no longer needed
-  // since we're now navigating to the user profile screen
 }
