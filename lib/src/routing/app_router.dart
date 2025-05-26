@@ -16,6 +16,7 @@ import '../features/categories/presentation/screens/categories_screen.dart';
 import '../features/categories/presentation/screens/category_transactions_screen.dart';
 import '../features/dashboard/domain/entities/recent_transaction.dart';
 import '../features/dashboard/domain/entities/top_category.dart';
+import '../features/statistics/presentation/screens/statistics_screen.dart';
 import '../features/dashboard/presentation/screens/transaction_details_screen.dart';
 import '../features/dashboard/presentation/screens/all_transactions_screen.dart';
 import '../features/transactions/presentation/screens/add_transaction_screen.dart';
@@ -44,6 +45,7 @@ enum AppRoute {
   expenses,
   incomes,
   userProfile,
+  statistics, // Add statistics route
 }
 
 // Extension to combine multiple refresh sources
@@ -230,6 +232,14 @@ GoRouter goRouter(Ref ref) {
             .userProfile.name, // Use enum value instead of string literal
         pageBuilder: (context, state) => const NoTransitionPage(
           child: UserProfileScreen(),
+        ),
+      ),
+      // Statistics route - new addition
+      GoRoute(
+        path: '/statistics',
+        name: AppRoute.statistics.name,
+        pageBuilder: (context, state) => const NoTransitionPage(
+          child: StatisticsScreen(),
         ),
       ),
       // Bottom navigation with tabs

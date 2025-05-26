@@ -206,7 +206,7 @@ final dashboardDataProvider = AutoDisposeFutureProvider<
 typedef DashboardDataRef = AutoDisposeFutureProviderRef<
     ({List<RecentTransaction> transactions, List<TopCategory> categories})>;
 String _$dashboardDataServiceHash() =>
-    r'66e07cf9beae387e0208c6828fcb43029c2cc60d';
+    r'c6e7ebc581009753044a2b637b56dd7d8ff97a9a';
 
 /// A service that coordinates refreshing all dashboard data components
 ///

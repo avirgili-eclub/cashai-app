@@ -7,7 +7,7 @@ part of 'post_login_splash_provider.dart';
 // **************************************************************************
 
 String _$postLoginSplashStateHash() =>
-    r'a6d0541c5c28ffe15a25cc08f56422ecd44fed56';
+    r'8c6f1d993a101d3d2d48a1678050dc5cc6905aef';
 
 /// See also [PostLoginSplashState].
 @ProviderFor(PostLoginSplashState)

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 class BottomNavBar extends StatelessWidget {
   const BottomNavBar({super.key});
@@ -23,21 +24,8 @@ class BottomNavBar extends StatelessWidget {
           children: [
             _buildNavItem(context, Icons.home, 'Inicio', true, null),
             _buildNavItem(context, Icons.pie_chart, 'Estadísticas', false, () {
-              showDialog(
-                context: context,
-                builder: (BuildContext context) {
-                  return AlertDialog(
-                    title: const Text('Estadísticas'),
-                    content: const Text('Proximamente estará habilitado'),
-                    actions: <Widget>[
-                      TextButton(
-                        onPressed: () => Navigator.of(context).pop(),
-                        child: const Text('Aceptar'),
-                      ),
-                    ],
-                  );
-                },
-              );
+              // Navigate to the statistics screen instead of showing dialog
+              context.pushNamed('statistics');
             }),
             const SizedBox(width: 48), // Space for FAB
             _buildNavItem(
