@@ -19,7 +19,6 @@ class StatisticsScreen extends ConsumerStatefulWidget {
 class _StatisticsScreenState extends ConsumerState<StatisticsScreen> {
   String _selectedTimeRange = 'month'; // Default to monthly view
   int _currentMonthIndex = 1; // Current month index (0-based)
-  final List<String> _months = ['Abril 2025', 'Mayo 2025', 'Junio 2025'];
 
   @override
   Widget build(BuildContext context) {
@@ -104,6 +103,8 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen> {
         padding: const EdgeInsets.all(16.0),
         child: balanceAsync.when(
           data: (balance) {
+            final monthData = StatsMockData
+                .monthlyData[StatsMockData.months[_currentMonthIndex]]!;
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -111,7 +112,7 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      _months[_currentMonthIndex],
+                      StatsMockData.months[_currentMonthIndex],
                       style: const TextStyle(
                         color: Colors.white70,
                         fontSize: 14,
@@ -133,7 +134,8 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen> {
                         _buildMonthNavigationButton(
                           icon: Icons.chevron_right,
                           onTap: () {
-                            if (_currentMonthIndex < _months.length - 1) {
+                            if (_currentMonthIndex <
+                                StatsMockData.months.length - 1) {
                               setState(() {
                                 _currentMonthIndex++;
                               });
@@ -161,7 +163,7 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen> {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          '${balance.currency} ${balance.totalBalance.toStringAsFixed(0)}',
+                          '${balance.currency} ${monthData.balance.toStringAsFixed(0)}',
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 24,
@@ -179,10 +181,12 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen> {
                             color: Colors.white.withOpacity(0.2),
                             borderRadius: BorderRadius.circular(16),
                           ),
-                          child: const Text(
-                            '+12.5%',
+                          child: Text(
+                            '${monthData.change > 0 ? '+' : ''}${monthData.change}',
                             style: TextStyle(
-                              color: Colors.green,
+                              color: monthData.change >= 0
+                                  ? Colors.green
+                                  : Colors.red,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -335,21 +339,21 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen> {
         ? ['Ene', 'Feb', 'Mar', 'Abr']
         : ['Sem 1', 'Sem 2', 'Sem 3', 'Sem 4'];
 
-    // Sample data - in a real app this would come from your balance data
-    final List<double> incomeData = [0.85, 0.65, 0.95, 0.55];
-    final List<double> expenseData = [0.45, 0.35, 0.75, 0.25];
+    final monthData =
+        StatsMockData.monthlyData[StatsMockData.months[_currentMonthIndex]]!;
+    final weeks = monthData.weeks;
 
     return BarChart(
       BarChartData(
         alignment: BarChartAlignment.spaceBetween,
         titlesData: FlTitlesData(
-          leftTitles: AxisTitles(
+          leftTitles: const AxisTitles(
             sideTitles: SideTitles(showTitles: false),
           ),
-          rightTitles: AxisTitles(
+          rightTitles: const AxisTitles(
             sideTitles: SideTitles(showTitles: false),
           ),
-          topTitles: AxisTitles(
+          topTitles: const AxisTitles(
             sideTitles: SideTitles(showTitles: false),
           ),
           bottomTitles: AxisTitles(
@@ -375,12 +379,12 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen> {
         ),
         borderData: FlBorderData(show: false),
         barGroups: List.generate(
-          labels.length,
+          weeks.length,
           (i) => BarChartGroupData(
             x: i,
             barRods: [
               BarChartRodData(
-                toY: incomeData[i] * 100,
+                toY: weeks[i].income,
                 color: AppStyles.incomeColor,
                 width: 8,
                 borderRadius: const BorderRadius.only(
@@ -389,7 +393,7 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen> {
                 ),
               ),
               BarChartRodData(
-                toY: expenseData[i] * 100,
+                toY: weeks[i].expense,
                 color: AppStyles.expenseColor,
                 width: 8,
                 borderRadius: const BorderRadius.only(
@@ -476,54 +480,23 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen> {
   }
 
   Widget _buildPieChart() {
+    final categories = StatsMockData.categoryDistribution;
+
     return PieChart(
       PieChartData(
-        sections: [
-          PieChartSectionData(
-            value: 35,
-            color: Colors.purple.shade400,
-            title: '35%',
-            radius: 80,
-            titleStyle: const TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-              fontSize: 14,
-            ),
-          ),
-          PieChartSectionData(
-            value: 25,
-            color: Colors.blue.shade400,
-            title: '25%',
-            radius: 80,
-            titleStyle: const TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-              fontSize: 14,
-            ),
-          ),
-          PieChartSectionData(
-            value: 20,
-            color: Colors.green.shade400,
-            title: '20%',
-            radius: 80,
-            titleStyle: const TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-              fontSize: 14,
-            ),
-          ),
-          PieChartSectionData(
-            value: 15,
-            color: Colors.red.shade200,
-            title: '15%',
-            radius: 80,
-            titleStyle: const TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-              fontSize: 14,
-            ),
-          ),
-        ],
+        sections: categories
+            .map((category) => PieChartSectionData(
+                  value: category.percentage.toDouble(),
+                  color: category.color,
+                  title: '${category.percentage}',
+                  radius: 80,
+                  titleStyle: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
+                ))
+            .toList(),
         centerSpaceRadius: 40,
         sectionsSpace: 2,
       ),
@@ -535,28 +508,15 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen> {
       alignment: WrapAlignment.center,
       spacing: 16,
       runSpacing: 12,
-      children: [
-        _buildCategoryLegendItem(
-          emoji: '🍔',
-          color: Colors.purple.shade400,
-          percentage: '35%',
-        ),
-        _buildCategoryLegendItem(
-          emoji: '🚗',
-          color: Colors.blue.shade400,
-          percentage: '25%',
-        ),
-        _buildCategoryLegendItem(
-          emoji: '🎮',
-          color: Colors.green.shade400,
-          percentage: '20%',
-        ),
-        _buildCategoryLegendItem(
-          emoji: '⚕️',
-          color: Colors.red.shade200,
-          percentage: '15%',
-        ),
-      ],
+      children: StatsMockData.categoryDistribution
+          .map(
+            (category) => _buildCategoryLegendItem(
+              emoji: category.emoji,
+              color: category.color,
+              percentage: '${category.percentage}',
+            ),
+          )
+          .toList(),
     );
   }
 

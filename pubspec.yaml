@@ -49,8 +49,8 @@ dependencies:
   # Add month picker dialog for better month selection UI
   month_picker_dialog: ^6.0.3
   flutter_slidable: ^4.0.0
-  # Add chart library for statistics
-  fl_chart: ^0.66.2 # Add FL Chart for beautiful charts
+  # Update chart library version
+  fl_chart: ^1.0.0 # Updated to version 1.0.0
 
 dev_dependencies:
   flutter_test:
