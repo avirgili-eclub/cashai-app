@@ -8,6 +8,7 @@ import '../../../dashboard/presentation/controllers/balance_controller.dart';
 import '../../../dashboard/presentation/widgets/bottom_nav_bar.dart';
 import '../../../dashboard/presentation/widgets/send_audio_button.dart';
 import '../../../dashboard/data/mock/stats_mock_data.dart';
+import '../../../dashboard/presentation/providers/active_screen_provider.dart';
 import '../../../../core/presentation/widgets/money_text.dart';
 
 class StatisticsScreen extends ConsumerStatefulWidget {
@@ -24,49 +25,77 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen> {
   int _currentMonthIndex = 1; // Current month index (0-based)
 
   @override
+  void initState() {
+    super.initState();
+
+    // Set the active screen to statistics when this screen is loaded
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(activeScreenProvider.notifier).state = ActiveScreen.statistics;
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     final balanceAsync = ref.watch(balanceControllerProvider);
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Estadísticas'),
-        backgroundColor: AppStyles.primaryColor,
-        foregroundColor: Colors.white,
-      ),
-      body: SingleChildScrollView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header
-            _buildHeader(),
-
-            // Monthly Overview Card
-            _buildMonthlyOverviewCard(balanceAsync),
-
-            // Expense vs Income Chart
-            _buildExpenseVsIncomeChart(),
-
-            // Category Distribution
-            _buildCategoryDistributionChart(),
-
-            const SizedBox(height: 40),
-          ],
+    // Wrap the Scaffold with PopScope to handle back button presses
+    return PopScope(
+      onPopInvoked: (didPop) {
+        // When popping back to dashboard, update the active screen
+        if (didPop) {
+          ref.read(activeScreenProvider.notifier).state = ActiveScreen.home;
+        }
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Estadísticas'),
+          backgroundColor: AppStyles.primaryColor,
+          foregroundColor: Colors.white,
+          // Make sure the back button also updates the active screen
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () {
+              // Update active screen before navigation
+              ref.read(activeScreenProvider.notifier).state = ActiveScreen.home;
+              context.pop();
+            },
+          ),
         ),
-      ),
-      bottomNavigationBar: SizedBox(
-        height: 70,
-        child: const BottomNavBar(),
-      ),
-      floatingActionButton: Transform.translate(
-        offset: const Offset(0, 15),
-        child: SendAudioButton(
-          onTransactionAdded: () {
-            ref.read(balanceControllerProvider.notifier).refreshBalance();
-          },
+        body: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header
+              _buildHeader(),
+
+              // Monthly Overview Card
+              _buildMonthlyOverviewCard(balanceAsync),
+
+              // Expense vs Income Chart
+              _buildExpenseVsIncomeChart(),
+
+              // Category Distribution
+              _buildCategoryDistributionChart(),
+
+              const SizedBox(height: 40),
+            ],
+          ),
         ),
+        bottomNavigationBar: SizedBox(
+          height: 70,
+          child: const BottomNavBar(),
+        ),
+        floatingActionButton: Transform.translate(
+          offset: const Offset(0, 15),
+          child: SendAudioButton(
+            onTransactionAdded: () {
+              ref.read(balanceControllerProvider.notifier).refreshBalance();
+            },
+          ),
+        ),
+        floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
     );
   }
 

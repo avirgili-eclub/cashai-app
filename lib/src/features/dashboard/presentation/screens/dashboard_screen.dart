@@ -9,6 +9,7 @@ import '../../../../routing/app_router.dart';
 import '../../domain/services/dashboard_data_service.dart';
 import '../controllers/balance_controller.dart';
 import '../controllers/transaction_controller.dart';
+import '../providers/active_screen_provider.dart';
 import '../widgets/app_header.dart';
 import '../widgets/balance_card.dart';
 import '../widgets/collapsible_actions_card.dart';
@@ -39,6 +40,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     // Always force splash on first build for smoother transition
     _forceShowSplash = true;
     _isDataLoading = true;
+
+    // Set the active screen to home when dashboard is loaded
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(activeScreenProvider.notifier).state = ActiveScreen.home;
+    });
 
     // Set a safety timer to force-hide splash after a maximum time
     _splashHideTimer = Timer(const Duration(seconds: 15), () {
