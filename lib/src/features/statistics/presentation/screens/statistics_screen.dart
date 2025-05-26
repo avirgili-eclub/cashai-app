@@ -446,35 +446,32 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen> {
   Widget _buildCategoryDistributionChart() {
     return Padding(
       padding: const EdgeInsets.all(16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Distribución por Categoría',
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 16,
+      child: Container(
+        padding: const EdgeInsets.all(16.0),
+        decoration: BoxDecoration(
+          color: Colors.grey.shade50,
+          borderRadius: BorderRadius.circular(16.0),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Title moved inside the container
+            const Text(
+              'Distribución por Categoría',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+              ),
             ),
-          ),
-          const SizedBox(height: 16),
-          Container(
-            padding: const EdgeInsets.all(24.0),
-            decoration: BoxDecoration(
-              color: Colors.grey.shade50,
-              borderRadius: BorderRadius.circular(16.0),
+            const SizedBox(height: 16),
+            SizedBox(
+              height: 240,
+              child: _buildPieChart(),
             ),
-            child: Column(
-              children: [
-                SizedBox(
-                  height: 240,
-                  child: _buildPieChart(),
-                ),
-                const SizedBox(height: 16),
-                _buildCategoryLegends(),
-              ],
-            ),
-          ),
-        ],
+            const SizedBox(height: 16),
+            _buildCategoryLegends(),
+          ],
+        ),
       ),
     );
   }
