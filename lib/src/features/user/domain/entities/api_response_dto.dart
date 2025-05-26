@@ -13,7 +13,7 @@ class ApiResponseDTO<T> {
     return ApiResponseDTO(
       success: json['success'] ?? false,
       message: json['message'] ?? '',
-      data: json['data'],
+      data: json['data'] is T ? json['data'] : null,
     );
   }
 

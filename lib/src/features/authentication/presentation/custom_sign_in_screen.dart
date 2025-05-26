@@ -104,10 +104,19 @@ class _CustomSignInScreenState extends ConsumerState<CustomSignInScreen> {
         // Check if still mounted after async operation
         if (!mounted) return;
 
-        if (response != null) {
-          developer.log(
-              'Login successful, token received: ${response.containsKey('token')}',
+        if (response != null && response.success) {
+          developer.log('Login successful: ${response.message}',
               name: 'custom_sign_in_screen');
+
+          // Check if it's the first login
+          final isFirstLogin = response.data?.isFirstLogin ?? false;
+
+          if (isFirstLogin) {
+            developer.log('This is the user\'s first login',
+                name: 'custom_sign_in_screen');
+            // You can add special handling for first-time users here
+            // Such as showing a welcome tutorial or collecting additional info
+          }
 
           // Ensure splash is visible
           ref.read(postLoginSplashStateProvider.notifier).showSplash();
@@ -130,9 +139,12 @@ class _CustomSignInScreenState extends ConsumerState<CustomSignInScreen> {
           ref.read(postLoginSplashStateProvider.notifier).hideSplash();
 
           final error = ref.read(authControllerProvider).error;
+          final errorMessage =
+              response?.message ?? error ?? 'Error al iniciar sesión';
+
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(error ?? 'Error al iniciar sesión'),
+              content: Text(errorMessage),
               backgroundColor: Colors.red,
             ),
           );

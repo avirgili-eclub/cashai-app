@@ -7,10 +7,12 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 import '../../domain/dtos/user_registration_dto.dart';
+import '../../domain/dtos/login_response_dto.dart';
 import '../../domain/models/auth_response.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../../domain/app_user.dart';
-import '../../../../core/config/api_config.dart'; // Import ApiConfig
+import '../../../../core/config/api_config.dart';
+import '../../../../features/user/domain/entities/api_response_dto.dart';
 
 // Add part directive for generated code
 part 'auth_repository_impl.g.dart';
@@ -107,7 +109,8 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
-  Future<Map<String, dynamic>> login(String email, String password) async {
+  Future<ApiResponseDTO<LoginResponseDTO>> login(
+      String email, String password) async {
     try {
       // Use authBaseUrl for login with a fallback to baseUrl if null
       final effectiveBaseUrl = authBaseUrl;
@@ -151,15 +154,33 @@ class AuthRepositoryImpl implements AuthRepository {
             'Error al procesar la respuesta del servidor: ${e.toString()}');
       }
 
-      if (response.statusCode == 200) {
-        developer.log(
-            'Login successful, token received: ${responseBody.containsKey('token')}',
+      // Parse the ApiResponseDTO first
+      final apiResponse =
+          ApiResponseDTO<Map<String, dynamic>>.fromJson(responseBody);
+
+      if (response.statusCode == 200 && apiResponse.success) {
+        developer.log('Login successful: ${apiResponse.message}',
             name: 'auth_repository');
-        return responseBody;
+
+        // Now parse the data field as LoginResponseDTO
+        if (apiResponse.data != null) {
+          // Convert nested data to LoginResponseDTO
+          final loginData = LoginResponseDTO.fromJson(apiResponse.data!);
+
+          // Return as ApiResponseDTO<LoginResponseDTO>
+          return ApiResponseDTO<LoginResponseDTO>(
+            success: apiResponse.success,
+            message: apiResponse.message,
+            data: loginData,
+          );
+        } else {
+          // Data is null, which is unexpected for a success response
+          throw AuthError('Login successful, but no data was received',
+              statusCode: response.statusCode);
+        }
       } else {
-        String errorMessage = responseBody is String
-            ? responseBody
-            : responseBody['message'] ?? 'Error al iniciar sesión';
+        // Error case - either non-200 status code or success=false
+        String errorMessage = apiResponse.message;
         developer.log('Login error: $errorMessage', name: 'auth_repository');
         throw AuthError(errorMessage, statusCode: response.statusCode);
       }

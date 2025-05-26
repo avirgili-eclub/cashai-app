@@ -4,17 +4,19 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../../../core/auth/providers/user_session_provider.dart';
 import '../../domain/dtos/user_registration_dto.dart';
+import '../../domain/dtos/login_response_dto.dart';
 import '../../domain/models/auth_response.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../../data/repositories/auth_repository_impl.dart';
 import '../../../../features/dashboard/presentation/providers/post_login_splash_provider.dart';
+import '../../../../features/user/domain/entities/api_response_dto.dart';
 
 // Auth state for the controller
 class AuthState {
   final bool isLoading;
   final String? error;
   final UserRegistrationResponse? registrationResponse;
-  final Map<String, dynamic>? loginResponse;
+  final ApiResponseDTO<LoginResponseDTO>? loginResponse;
   final Map<String, dynamic>? googleLoginResponse;
   final Map<String, dynamic>? appleLoginResponse;
 
@@ -31,7 +33,7 @@ class AuthState {
     bool? isLoading,
     String? error,
     UserRegistrationResponse? registrationResponse,
-    Map<String, dynamic>? loginResponse,
+    ApiResponseDTO<LoginResponseDTO>? loginResponse,
     Map<String, dynamic>? googleLoginResponse,
     Map<String, dynamic>? appleLoginResponse,
   }) {
@@ -95,7 +97,7 @@ class AuthController extends StateNotifier<AuthState> {
     }
   }
 
-  Future<Map<String, dynamic>?> login({
+  Future<ApiResponseDTO<LoginResponseDTO>?> login({
     required String email,
     required String password,
   }) async {
@@ -119,11 +121,12 @@ class AuthController extends StateNotifier<AuthState> {
       );
 
       // Update user session with the received data
-      if (response.containsKey('userId')) {
-        final userId = response['userId'].toString();
-        final token = response['token']?.toString();
-        final username = response['username']?.toString();
-        final userEmail = response['email']?.toString();
+      if (response.data != null) {
+        final loginData = response.data!;
+        final userId = loginData.userId;
+        final token = loginData.token;
+        final username = loginData.username;
+        final userEmail = loginData.email;
 
         developer.log(
             'Login successful, setting user session with userId: $userId',
@@ -139,8 +142,7 @@ class AuthController extends StateNotifier<AuthState> {
         // Make sure splash screen is active
         _ref.read(postLoginSplashStateProvider.notifier).showSplash();
       } else {
-        developer.log(
-            'Warning: Response does not contain userId key: $response',
+        developer.log('Warning: Response data is null',
             name: 'auth_controller');
       }
 
