@@ -1,11 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../domain/entities/balance.dart';
+import '../controllers/balance_controller.dart';
 
-class BottomNavBar extends StatelessWidget {
+class BottomNavBar extends ConsumerWidget {
   const BottomNavBar({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final balanceAsync = ref.watch(balanceControllerProvider);
+
     return Container(
       height: 80,
       decoration: BoxDecoration(
@@ -24,8 +29,10 @@ class BottomNavBar extends StatelessWidget {
           children: [
             _buildNavItem(context, Icons.home, 'Inicio', true, null),
             _buildNavItem(context, Icons.pie_chart, 'Estadísticas', false, () {
-              // Navigate to the statistics screen instead of showing dialog
-              context.pushNamed('statistics');
+              // Get balance data to pass to statistics screen
+              balanceAsync.whenData((balance) {
+                context.pushNamed('statistics', extra: balance);
+              });
             }),
             const SizedBox(width: 48), // Space for FAB
             _buildNavItem(

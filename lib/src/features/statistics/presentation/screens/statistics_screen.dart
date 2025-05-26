@@ -8,9 +8,12 @@ import '../../../dashboard/presentation/controllers/balance_controller.dart';
 import '../../../dashboard/presentation/widgets/bottom_nav_bar.dart';
 import '../../../dashboard/presentation/widgets/send_audio_button.dart';
 import '../../../dashboard/data/mock/stats_mock_data.dart';
+import '../../../../core/presentation/widgets/money_text.dart';
 
 class StatisticsScreen extends ConsumerStatefulWidget {
-  const StatisticsScreen({Key? key}) : super(key: key);
+  final Balance? balance;
+
+  const StatisticsScreen({Key? key, this.balance}) : super(key: key);
 
   @override
   ConsumerState<StatisticsScreen> createState() => _StatisticsScreenState();
@@ -102,9 +105,12 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen> {
         ),
         padding: const EdgeInsets.all(16.0),
         child: balanceAsync.when(
-          data: (balance) {
+          data: (currentBalance) {
+            // Use either the passed balance or the current balance from provider
+            final balance = widget.balance ?? currentBalance;
             final monthData = StatsMockData
                 .monthlyData[StatsMockData.months[_currentMonthIndex]]!;
+
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -162,13 +168,16 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen> {
                           ),
                         ),
                         const SizedBox(height: 4),
-                        Text(
-                          '${balance.currency} ${monthData.balance.toStringAsFixed(0)}',
+                        // Use MoneyText widget for formatting the balance
+                        MoneyText(
+                          amount: balance.totalBalance,
+                          currency: balance.currency,
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 24,
                             fontWeight: FontWeight.bold,
                           ),
+                          useColors: false,
                         ),
                       ],
                     ),
@@ -182,7 +191,7 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen> {
                             borderRadius: BorderRadius.circular(16),
                           ),
                           child: Text(
-                            '${monthData.change > 0 ? '+' : ''}${monthData.change}',
+                            '${monthData.change > 0 ? '+' : ''}${monthData.change}%',
                             style: TextStyle(
                               color: monthData.change >= 0
                                   ? Colors.green

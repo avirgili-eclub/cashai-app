@@ -14,6 +14,7 @@ import 'package:numia/src/routing/scaffold_with_nested_navigation.dart';
 import 'package:numia/src/features/dashboard/presentation/screens/dashboard_screen.dart';
 import '../features/categories/presentation/screens/categories_screen.dart';
 import '../features/categories/presentation/screens/category_transactions_screen.dart';
+import '../features/dashboard/domain/entities/balance.dart';
 import '../features/dashboard/domain/entities/recent_transaction.dart';
 import '../features/dashboard/domain/entities/top_category.dart';
 import '../features/statistics/presentation/screens/statistics_screen.dart';
@@ -238,8 +239,8 @@ GoRouter goRouter(Ref ref) {
       GoRoute(
         path: '/statistics',
         name: AppRoute.statistics.name,
-        pageBuilder: (context, state) => const NoTransitionPage(
-          child: StatisticsScreen(),
+        pageBuilder: (context, state) => NoTransitionPage(
+          child: StatisticsScreen(balance: state.extra as Balance?),
         ),
       ),
       // Bottom navigation with tabs
