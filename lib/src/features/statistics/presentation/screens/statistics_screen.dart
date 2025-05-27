@@ -10,6 +10,7 @@ import '../../../dashboard/presentation/widgets/send_audio_button.dart';
 import '../../../dashboard/data/mock/stats_mock_data.dart';
 import '../../../dashboard/presentation/providers/active_screen_provider.dart';
 import '../../../../core/presentation/widgets/money_text.dart';
+import '../widgets/category_distribution_chart.dart';
 
 class StatisticsScreen extends ConsumerStatefulWidget {
   final Balance? balance;
@@ -75,7 +76,7 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen> {
               // Expense vs Income Chart
               _buildExpenseVsIncomeChart(),
 
-              // Category Distribution
+              // Category Distribution - Now using the real data component
               _buildCategoryDistributionChart(),
 
               const SizedBox(height: 40),
@@ -493,102 +494,63 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Title moved inside the container
-            const Text(
-              'Distribución por Categoría',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
-              ),
-            ),
-            const SizedBox(height: 16),
-            SizedBox(
-              height: 240,
-              child: _buildPieChart(),
-            ),
-            const SizedBox(height: 16),
-            _buildCategoryLegends(),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildPieChart() {
-    final categories = StatsMockData.categoryDistribution;
-
-    return PieChart(
-      PieChartData(
-        sections: categories
-            .map((category) => PieChartSectionData(
-                  value: category.percentage.toDouble(),
-                  color: category.color,
-                  title: '${category.percentage}',
-                  radius: 80,
-                  titleStyle: const TextStyle(
-                    color: Colors.white,
+            // Title and time range selector
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Distribución por Categoría',
+                  style: TextStyle(
                     fontWeight: FontWeight.bold,
-                    fontSize: 14,
+                    fontSize: 16,
                   ),
-                ))
-            .toList(),
-        centerSpaceRadius: 40,
-        sectionsSpace: 2,
-      ),
-    );
-  }
+                ),
+                DropdownButton<String>(
+                  value: _selectedTimeRange,
+                  underline: Container(),
+                  icon: const Icon(Icons.arrow_drop_down, size: 16),
+                  style: const TextStyle(
+                    color: Colors.grey,
+                    fontSize: 12,
+                  ),
+                  onChanged: (String? newValue) {
+                    if (newValue != null) {
+                      setState(() {
+                        _selectedTimeRange = newValue;
+                      });
+                    }
+                  },
+                  items: <String>['month', 'lastMonth', 'year']
+                      .map<DropdownMenuItem<String>>((String value) {
+                    String displayText;
+                    switch (value) {
+                      case 'month':
+                        displayText = 'Este Mes';
+                        break;
+                      case 'lastMonth':
+                        displayText = 'Último Mes';
+                        break;
+                      case 'year':
+                        displayText = 'Este Año';
+                        break;
+                      default:
+                        displayText = value;
+                    }
+                    return DropdownMenuItem<String>(
+                      value: value,
+                      child: Text(displayText),
+                    );
+                  }).toList(),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
 
-  Widget _buildCategoryLegends() {
-    return Wrap(
-      alignment: WrapAlignment.center,
-      spacing: 16,
-      runSpacing: 12,
-      children: StatsMockData.categoryDistribution
-          .map(
-            (category) => _buildCategoryLegendItem(
-              emoji: category.emoji,
-              color: category.color,
-              percentage: '${category.percentage}',
-            ),
-          )
-          .toList(),
-    );
-  }
-
-  Widget _buildCategoryLegendItem({
-    required String emoji,
-    required Color color,
-    required String percentage,
-  }) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(
-          emoji,
-          style: const TextStyle(fontSize: 18),
-        ),
-        const SizedBox(width: 4),
-        Row(
-          children: [
-            Container(
-              width: 12,
-              height: 12,
-              decoration: BoxDecoration(
-                color: color,
-                shape: BoxShape.circle,
-              ),
-            ),
-            const SizedBox(width: 4),
-            Text(
-              percentage,
-              style: const TextStyle(
-                fontSize: 12,
-                color: Colors.grey,
-              ),
-            ),
+            // Use the new CategoryDistributionChart component
+            CategoryDistributionChart(timeRange: _selectedTimeRange),
           ],
         ),
-      ],
+      ),
     );
   }
 }
