@@ -491,8 +491,10 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen> {
           color: Colors.grey.shade50,
           borderRadius: BorderRadius.circular(16.0),
         ),
+        // Remove fixed height constraints and let content determine the size
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min, // Use minimum required space
           children: [
             // Title and time range selector
             Row(
@@ -544,9 +546,18 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen> {
                 ),
               ],
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 8),
+            const Text(
+              'Toca en una categoría para ver más detalles',
+              style: TextStyle(
+                color: Colors.grey,
+                fontSize: 12,
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+            const SizedBox(height: 8),
 
-            // Use the new CategoryDistributionChart component
+            // Use the CategoryDistributionChart component
             CategoryDistributionChart(timeRange: _selectedTimeRange),
           ],
         ),

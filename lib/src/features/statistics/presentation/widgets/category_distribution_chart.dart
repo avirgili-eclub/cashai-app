@@ -1,15 +1,20 @@
 import 'dart:developer' as developer;
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fl_chart/fl_chart.dart';
 
 import '../../domain/models/category_stat.dart';
 import '../controllers/category_distribution_controller.dart';
 import '../../../../core/utils/emoji_formatter.dart';
-import '../../../dashboard/data/mock/stats_mock_data.dart'; // For fallback data
-import '../../../../core/utils/error_parser.dart'; // Import utility for error parsing
+import '../../../../core/utils/error_parser.dart';
+import '../../../../core/styles/app_styles.dart';
+import '../../../../core/presentation/widgets/money_text.dart';
+import '../../../../core/utils/money_formatter.dart'; // Use MoneyFormatter instead of CurrencyFormatter
+import '../../../dashboard/data/mock/stats_mock_data.dart';
 
-class CategoryDistributionChart extends ConsumerWidget {
+class CategoryDistributionChart extends ConsumerStatefulWidget {
   final String? timeRange;
 
   const CategoryDistributionChart({
@@ -18,13 +23,40 @@ class CategoryDistributionChart extends ConsumerWidget {
   }) : super(key: key);
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<CategoryDistributionChart> createState() =>
+      _CategoryDistributionChartState();
+}
+
+class _CategoryDistributionChartState
+    extends ConsumerState<CategoryDistributionChart> {
+  // Track the selected category index
+  final ValueNotifier<int?> _selectedIndex = ValueNotifier<int?>(null);
+  // Timer for auto-dismissing the tooltip
+  Timer? _autoHideTimer;
+
+  @override
+  void dispose() {
+    _selectedIndex.dispose();
+    _autoHideTimer?.cancel();
+    super.dispose();
+  }
+
+  // Start auto-hide timer for the tooltip
+  void _startAutoHideTimer() {
+    _autoHideTimer?.cancel();
+    _autoHideTimer = Timer(const Duration(seconds: 8), () {
+      _selectedIndex.value = null;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     developer.log(
-        'Building CategoryDistributionChart with timeRange: $timeRange',
+        'Building CategoryDistributionChart with timeRange: ${widget.timeRange}',
         name: 'category_distribution_chart');
 
-    final categoriesAsync =
-        ref.watch(categoryDistributionControllerProvider(timeRange: timeRange));
+    final categoriesAsync = ref.watch(
+        categoryDistributionControllerProvider(timeRange: widget.timeRange));
 
     return categoriesAsync.when(
       data: (categories) {
@@ -112,137 +144,300 @@ class CategoryDistributionChart extends ConsumerWidget {
   // Pass BuildContext to the chart building method
   Widget _buildChart(BuildContext context, List<CategoryStat> categories,
       {bool isMockData = false}) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        if (isMockData)
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(8),
-            margin: const EdgeInsets.only(bottom: 16),
-            decoration: BoxDecoration(
-              color: Colors.amber.shade50,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.amber.shade200),
-            ),
-            child: const Text(
-              'Mostrando datos de ejemplo',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: Colors.amber,
-                fontWeight: FontWeight.bold,
+    return SingleChildScrollView(
+      // Make the whole content scrollable to prevent overflow
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (isMockData)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(8),
+              margin: const EdgeInsets.only(bottom: 16),
+              decoration: BoxDecoration(
+                color: Colors.amber.shade50,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.amber.shade200),
+              ),
+              child: const Text(
+                'Mostrando datos de ejemplo',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Colors.amber,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
-          ),
-        SizedBox(
-          height: 240,
-          child: _buildPieChart(context, categories),
-        ),
-        const SizedBox(height: 16),
-        _buildCategoryLegends(categories),
-      ],
+          _buildPieChart(context, categories),
+          const SizedBox(height: 16),
+          _buildCategoryLegends(categories),
+        ],
+      ),
     );
   }
 
   // Pass BuildContext to the pie chart
   Widget _buildPieChart(BuildContext context, List<CategoryStat> categories) {
-    return PieChart(
-      PieChartData(
-        sections: categories
-            .map((category) => PieChartSectionData(
-                  value: category.percentage,
-                  color: category.getColorObject(),
-                  title: '${category.percentage.toStringAsFixed(1)}%',
-                  radius: 80,
-                  titleStyle: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
+    return SingleChildScrollView(
+      child: Column(
+        mainAxisSize: MainAxisSize.min, // Use minimum required space
+        children: [
+          // Add a container to show detailed info when a category is selected
+          ValueListenableBuilder<int?>(
+            valueListenable: _selectedIndex,
+            builder: (context, index, _) {
+              if (index == null || index < 0 || index >= categories.length) {
+                return const SizedBox(height: 0);
+              }
+
+              final category = categories[index];
+
+              // Use totalAmount from the model instead of calculating it here
+              final totalAmount = category.totalAmount > 0
+                  ? category.totalAmount
+                  : categories.fold(0.0, (sum, cat) => sum + cat.amount);
+
+              // Start auto-hide timer when tooltip is shown
+              _startAutoHideTimer();
+
+              return Container(
+                margin: const EdgeInsets.only(bottom: 16),
+                padding:
+                    const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                decoration: BoxDecoration(
+                  color: category.getColorObject().withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: category.getColorObject().withOpacity(0.3),
+                    width: 1,
                   ),
-                ))
-            .toList(),
-        centerSpaceRadius: 40,
-        sectionsSpace: 2,
-        pieTouchData: PieTouchData(
-          enabled: true,
-          touchCallback: (FlTouchEvent event, pieTouchResponse) {
-            // Fix: Use the BuildContext passed from the build method
-            if (event is! FlTapUpEvent) return;
-            if (pieTouchResponse == null ||
-                pieTouchResponse.touchedSection == null) return;
-
-            final touchedIndex =
-                pieTouchResponse.touchedSection!.touchedSectionIndex;
-            if (touchedIndex < 0 || touchedIndex >= categories.length) return;
-
-            final category = categories[touchedIndex];
-
-            // Use the context parameter passed to this method instead of trying to extract from event
-            ScaffoldMessenger.of(context).hideCurrentSnackBar();
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Row(
+                ),
+                child: Stack(
                   children: [
-                    EmojiFormatter.emojiToWidget(
-                      category.emoji,
-                      fontSize: 20,
-                      fallbackIcon: Icons.category,
-                      fallbackColor: category.getColorObject(),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        category.name,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
+                    // Close button in the top-right corner
+                    Positioned(
+                      top: -8,
+                      right: -8,
+                      child: IconButton(
+                        icon: Container(
+                          padding: const EdgeInsets.all(2),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.1),
+                                blurRadius: 2,
+                                spreadRadius: 1,
+                              ),
+                            ],
+                          ),
+                          child: Icon(
+                            Icons.close,
+                            size: 16,
+                            color: Colors.grey[600],
+                          ),
                         ),
+                        onPressed: () {
+                          _autoHideTimer?.cancel();
+                          _selectedIndex.value = null;
+                        },
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                        iconSize: 20,
+                        splashRadius: 20,
                       ),
                     ),
-                    Text(
-                      '\$${category.amount.toStringAsFixed(2)}',
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                      ),
+
+                    // Content
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            // Category emoji and color indicator
+                            Container(
+                              width: 48,
+                              height: 48,
+                              decoration: BoxDecoration(
+                                color:
+                                    category.getColorObject().withOpacity(0.2),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Center(
+                                child: EmojiFormatter.emojiToWidget(
+                                  category.emoji,
+                                  fontSize: 24,
+                                  fallbackIcon: Icons.category,
+                                  fallbackColor: category.getColorObject(),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+
+                            // Category details - expanded to take available space
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    category.name,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 16,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    '${category.percentage.toStringAsFixed(1)}% de tus gastos',
+                                    style: TextStyle(
+                                      color: Colors.grey[600],
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+
+                        // Show amount and transaction count in a separate row
+                        const SizedBox(height: 8),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            // Show total amount using MoneyText for proper formatting
+                            if (totalAmount > 0)
+                              Row(
+                                children: [
+                                  Text(
+                                    'Total: ',
+                                    style: TextStyle(
+                                      color: Colors.grey[600],
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                  // Use MoneyText with proper currency
+                                  MoneyText(
+                                    amount: totalAmount,
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 14,
+                                      color: Colors.grey[700],
+                                    ),
+                                    useColors: false,
+                                  ),
+                                ],
+                              ),
+
+                            // Amount and transaction count
+                            Row(
+                              children: [
+                                Text(
+                                  '${category.transactionCount} ${category.transactionCount == 1 ? 'transacción' : 'transacciones'}',
+                                  style: TextStyle(
+                                    color: Colors.grey[600],
+                                    fontSize: 12,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                // Use MoneyText instead of custom formatting with CLP
+                              ],
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
                   ],
                 ),
-                duration: const Duration(seconds: 2),
-                behavior: SnackBarBehavior.floating,
-                backgroundColor: category.getColorObject().withOpacity(0.9),
-                margin: const EdgeInsets.all(8),
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
+              );
+            },
+          ),
+
+          // The pie chart with fixed height to avoid layout issues
+          SizedBox(
+            height: 240,
+            child: PieChart(
+              PieChartData(
+                sections: categories
+                    .map((category) => PieChartSectionData(
+                          value: category.percentage,
+                          color: category.getColorObject(),
+                          title: '${category.percentage.toStringAsFixed(1)}%',
+                          radius: 80,
+                          titleStyle: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                          ),
+                        ))
+                    .toList(),
+                centerSpaceRadius: 40,
+                sectionsSpace: 2,
+                pieTouchData: PieTouchData(
+                  enabled: true,
+                  touchCallback: (FlTouchEvent event, pieTouchResponse) {
+                    // Handle tap events to show detailed information
+                    if (event is! FlTapUpEvent) return;
+                    if (pieTouchResponse == null ||
+                        pieTouchResponse.touchedSection == null) {
+                      // If tapped outside any section, clear the selection
+                      _selectedIndex.value = null;
+                      return;
+                    }
+
+                    final touchedIndex =
+                        pieTouchResponse.touchedSection!.touchedSectionIndex;
+                    if (touchedIndex < 0 || touchedIndex >= categories.length)
+                      return;
+
+                    // Update the selected index to show details
+                    _selectedIndex.value = touchedIndex;
+
+                    // Cancel any previous timer
+                    _autoHideTimer?.cancel();
+
+                    // Start auto-hide timer
+                    _startAutoHideTimer();
+
+                    // Add haptic feedback for better UX
+                    HapticFeedback.lightImpact();
+
+                    // Log for debugging
+                    developer.log(
+                        'Tapped on category: ${categories[touchedIndex].name} (${MoneyFormatter.formatAmount(categories[touchedIndex].amount)})',
+                        name: 'category_distribution_chart');
+                  },
                 ),
               ),
-            );
-
-            // Log for debugging
-            developer.log('Tapped on category: ${category.name}',
-                name: 'category_distribution_chart');
-          },
-        ),
+            ),
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildCategoryLegends(List<CategoryStat> categories) {
-    return Wrap(
-      alignment: WrapAlignment.center,
-      spacing: 16,
-      runSpacing: 12,
-      children: categories
-          .map(
-            (category) => _buildCategoryLegendItem(
-              emoji: category.emoji,
-              color: category.getColorObject(),
-              percentage: category.percentage.toStringAsFixed(1),
-              name: category.name,
-              amount: category.amount,
-            ),
-          )
-          .toList(),
+    return SizedBox(
+      width: double.infinity, // Make sure it takes full width
+      child: Wrap(
+        alignment: WrapAlignment.center,
+        spacing: 16,
+        runSpacing: 12,
+        children: categories
+            .map(
+              (category) => _buildCategoryLegendItem(
+                emoji: category.emoji,
+                color: category.getColorObject(),
+                percentage: category.percentage.toStringAsFixed(1),
+                name: category.name,
+                amount: category.amount,
+              ),
+            )
+            .toList(),
+      ),
     );
   }
 

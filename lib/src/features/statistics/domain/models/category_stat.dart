@@ -8,6 +8,8 @@ class CategoryStat {
   final double amount;
   final double percentage;
   final int transactionCount;
+  final double
+      totalAmount; // New field for the total amount from all categories
 
   CategoryStat({
     required this.id,
@@ -17,6 +19,7 @@ class CategoryStat {
     required this.amount,
     required this.percentage,
     required this.transactionCount,
+    this.totalAmount = 0.0, // Default value if not provided
   });
 
   factory CategoryStat.fromJson(Map<String, dynamic> json) {
@@ -33,6 +36,9 @@ class CategoryStat {
           ? (json['percentage'] as num).toDouble()
           : 0.0,
       transactionCount: json['transactionCount'] ?? 0,
+      totalAmount: json['totalAmount'] != null
+          ? (json['totalAmount'] as num).toDouble()
+          : 0.0,
     );
   }
 
