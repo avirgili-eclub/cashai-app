@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:numia/src/constants/app_sizes.dart';
+import 'package:cashai/src/constants/app_sizes.dart';
 
 /// Text button to be used as an [AppBar] action
 class ActionTextButton extends StatelessWidget {

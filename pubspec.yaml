@@ -1,8 +1,8 @@
-name: numia
-description: NUMIA Your personal finance assistant app
+name: cashai
+description: U CashAI Your personal finance assistant app
 
 publish_to: "none"
-version: 2.1.0
+version: 0.0.1
 
 environment:
   sdk: ">=3.6.0 <4.0.0"
@@ -51,6 +51,10 @@ dependencies:
   flutter_slidable: ^4.0.0
   # Update chart library version
   fl_chart: ^1.0.0 # Updated to version 1.0.0
+  encrypt: ^5.0.3
+  crypto: ^3.0.3
+  flutter_secure_storage: ^8.0.0
+  jailbreak_root_detection: ^1.1.6
 
 dev_dependencies:
   flutter_test:

@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:numia/src/common_widgets/primary_button.dart';
-import 'package:numia/src/constants/app_sizes.dart';
+import 'package:cashai/src/common_widgets/primary_button.dart';
+import 'package:cashai/src/constants/app_sizes.dart';
 // Updated import path
-import 'package:numia/src/features/authentication/data/repositories/auth_repository_impl.dart';
-import 'package:numia/src/routing/app_router.dart';
+import 'package:cashai/src/features/authentication/data/repositories/auth_repository_impl.dart';
+import 'package:cashai/src/routing/app_router.dart';
 
 /// Placeholder widget showing a message and CTA to go back to the home screen.
 class EmptyPlaceholderWidget extends ConsumerWidget {

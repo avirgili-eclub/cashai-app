@@ -3,10 +3,10 @@ import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:force_update_helper/force_update_helper.dart';
-import 'package:numia/src/core/styles/app_styles.dart';
-import 'package:numia/src/routing/app_router.dart';
-import 'package:numia/src/routing/app_startup.dart';
-import 'package:numia/src/utils/alert_dialogs.dart';
+import 'package:cashai/src/core/styles/app_styles.dart';
+import 'package:cashai/src/routing/app_router.dart';
+import 'package:cashai/src/routing/app_startup.dart';
+import 'package:cashai/src/utils/alert_dialogs.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class MyApp extends ConsumerWidget {
@@ -27,7 +27,7 @@ class MyApp extends ConsumerWidget {
             forceUpdateClient: ForceUpdateClient(
               // * Real apps should fetch this from an API endpoint or via
               // * Firebase Remote Config
-              fetchRequiredVersion: () => Future.value('2.0.0'),
+              fetchRequiredVersion: () => Future.value('0.0.1'),
               // * Example ID from this app: https://fluttertips.dev/
               // * To avoid mistakes, store the ID as an environment variable and
               // * read it with String.fromEnvironment

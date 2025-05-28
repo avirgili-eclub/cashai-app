@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:numia/src/localization/string_hardcoded.dart';
-import 'package:numia/src/utils/alert_dialogs.dart';
+import 'package:cashai/src/localization/string_hardcoded.dart';
+import 'package:cashai/src/utils/alert_dialogs.dart';
 
 extension AsyncValueUI on AsyncValue {
   void showAlertDialogOnError(BuildContext context) {

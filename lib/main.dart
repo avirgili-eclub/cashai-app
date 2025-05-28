@@ -4,11 +4,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart'; // Importamos intl para formateo de números
 import 'package:intl/date_symbol_data_local.dart'; // Para inicializar locales
-import 'package:numia/firebase_options.dart';
-import 'package:numia/src/app.dart';
-import 'package:numia/src/core/config/api_config.dart'; // Import the API config
-import 'package:numia/src/core/styles/app_styles.dart';
-import 'package:numia/src/localization/string_hardcoded.dart';
+import 'package:cashai/firebase_options.dart';
+import 'package:cashai/src/app.dart';
+import 'package:cashai/src/core/config/api_config.dart'; // Import the API config
+import 'package:cashai/src/core/styles/app_styles.dart';
+import 'package:cashai/src/localization/string_hardcoded.dart';
+// import the security services
+import 'package:cashai/src/core/security/encryption_service.dart';
 // ignore:depend_on_referenced_packages
 import 'package:flutter_web_plugins/url_strategy.dart';
 
@@ -16,9 +18,25 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   // turn off the # in the URLs on the web
   usePathUrlStrategy();
-  // * Register error handlers. For more info, see:
-  // * https://docs.flutter.dev/testing/errors
+  // * Register error handlers
   registerErrorHandlers();
+
+  // * Initialize security services first
+  try {
+    // Initialize encryption service
+    await EncryptionService().initialize();
+    debugPrint('Encryption service initialized successfully in main');
+
+    // Initialize security checker - no need to explicitly initialize
+    // It's a stateless service that will be used when needed
+    debugPrint('Security services ready');
+  } catch (e, stackTrace) {
+    debugPrint('Error initializing security services: $e');
+    debugPrint(stackTrace.toString());
+    // Consider how to handle security initialization failures
+    // For critical apps, you might want to prevent startup if security services fail
+  }
+
   // * Initialize Firebase
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
@@ -31,7 +49,7 @@ Future<void> main() async {
   // Initialize the API configuration
   // Para forzar el uso de la URL de producción, establece isProduction como true
   // O usa const bool forceProduction = true; para pruebas de producción mientras estás en desarrollo
-  const bool forceProduction = false; // Forzar modo producción para pruebas
+  const bool forceProduction = true; // Forzar modo producción para pruebas
   ApiConfig().init(
     isProduction: forceProduction || kReleaseMode,
     // La URL personalizada solo debe usarse si realmente necesitas una URL diferente

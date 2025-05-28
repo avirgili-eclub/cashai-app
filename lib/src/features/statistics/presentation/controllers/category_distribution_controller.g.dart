@@ -7,7 +7,7 @@ part of 'category_distribution_controller.dart';
 // **************************************************************************
 
 String _$categoryDistributionControllerHash() =>
-    r'f7bd68f1a64e24f39057f677b50d8f8a7c7eee58';
+    r'f6fc1b086ecbe943bda0bde054ed2178b1a9c6b0';
 
 /// Copied from Dart SDK
 class _SystemHash {

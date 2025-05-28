@@ -1,4 +1,4 @@
-import 'package:numia/src/features/dashboard/domain/enums/transaction_type.dart';
+import 'package:cashai/src/features/dashboard/domain/enums/transaction_type.dart';
 
 class Transaction {
   final String id;

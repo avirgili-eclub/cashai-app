@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import 'package:numia/src/constants/app_sizes.dart';
+import 'package:cashai/src/constants/app_sizes.dart';
 import 'dart:developer' as developer;
 import 'package:firebase_core/firebase_core.dart';
 import '../core/auth/providers/user_session_provider.dart';
-import 'app_router.dart'; // Import for router provider
+// Fix the imports for security services
+import '../core/security/security_checker.dart';
 import '../features/authentication/data/repositories/auth_repository_impl.dart';
 
 part 'app_startup.g.dart';
@@ -22,6 +23,14 @@ Future<void> appStartup(Ref ref) async {
     // Core Firebase initialization
     await Firebase.initializeApp();
     developer.log('Firebase initialized successfully', name: 'app_startup');
+
+    // Security services are already initialized in main.dart
+    // Just check device security status
+    final securityChecker = SecurityChecker();
+    final isSecure = await securityChecker.isDeviceSecure();
+    developer.log(
+        'Device security check: ${isSecure ? 'Secure' : 'Not secure'}',
+        name: 'app_startup');
 
     // Wait for auth repository to be ready
     final authRepository = await ref.read(authRepositoryProvider);

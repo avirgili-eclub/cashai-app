@@ -1,9 +1,9 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:numia/src/common_widgets/input_dropdown.dart';
-import 'package:numia/src/constants/app_sizes.dart';
-import 'package:numia/src/utils/format.dart';
+import 'package:cashai/src/common_widgets/input_dropdown.dart';
+import 'package:cashai/src/constants/app_sizes.dart';
+import 'package:cashai/src/utils/format.dart';
 
 class DateTimePicker extends StatelessWidget {
   const DateTimePicker({

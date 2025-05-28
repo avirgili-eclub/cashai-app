@@ -17,7 +17,7 @@
     <uses-feature android:name="android.hardware.camera.autofocus" />
     
     <application
-        android:label="starter_architecture_flutter_firebase"
+        android:label="CashAI"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:numia/src/common_widgets/responsive_center.dart';
-import 'package:numia/src/constants/app_sizes.dart';
-import 'package:numia/src/constants/breakpoints.dart';
+import 'package:cashai/src/common_widgets/responsive_center.dart';
+import 'package:cashai/src/constants/app_sizes.dart';
+import 'package:cashai/src/constants/breakpoints.dart';
 
 /// Scrollable widget that shows a responsive card with a given child widget.
 /// Useful for displaying forms and other widgets that need to be scrollable.
