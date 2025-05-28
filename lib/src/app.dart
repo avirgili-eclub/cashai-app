@@ -33,13 +33,14 @@ class MyApp extends ConsumerWidget {
               // * read it with String.fromEnvironment
               iosAppStoreId: '6482293361',
             ),
-            allowCancel: false,
+            allowCancel: true,
             showForceUpdateAlert: (context, allowCancel) => showAlertDialog(
               context: context,
-              title: 'App Update Required',
-              content: 'Please update to continue using the app.',
-              cancelActionText: allowCancel ? 'Later' : null,
-              defaultActionText: 'Update Now',
+              title: 'Actualización de Aplicación Requerida',
+              content:
+                  'Por favor actualice para continuar usando la aplicación.',
+              cancelActionText: allowCancel ? 'Más tarde' : null,
+              defaultActionText: 'Actualizar ahora',
             ),
             showStoreListing: (storeUrl) async {
               if (await canLaunchUrl(storeUrl)) {
