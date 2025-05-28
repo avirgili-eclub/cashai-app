@@ -1,5 +1,5 @@
 name: cashai
-description: U CashAI Your personal finance assistant app
+description: UCashAI Your personal finance assistant
 
 publish_to: "none"
 version: 0.0.1
@@ -8,7 +8,7 @@ environment:
   sdk: ">=3.6.0 <4.0.0"
 
 dependencies:
-  cloud_firestore: ^5.5.1
+  #cloud_firestore: ^5.5.1
   cupertino_icons: ^1.0.8
   currency_picker: ^2.0.21 # Added currency picker package
   equatable: ^2.0.7
