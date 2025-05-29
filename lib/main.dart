@@ -7,7 +7,6 @@ import 'package:intl/date_symbol_data_local.dart'; // Para inicializar locales
 import 'package:cashai/firebase_options.dart';
 import 'package:cashai/src/app.dart';
 import 'package:cashai/src/core/config/api_config.dart'; // Import the API config
-import 'package:cashai/src/core/styles/app_styles.dart';
 import 'package:cashai/src/localization/string_hardcoded.dart';
 // import the security services
 import 'package:cashai/src/core/security/encryption_service.dart';

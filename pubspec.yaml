@@ -15,7 +15,7 @@ dependencies:
   firebase_auth: ^5.3.4
   firebase_core: ^3.8.1
   firebase_ui_auth: ^1.16.0
-  firebase_ui_firestore: ^1.7.0
+  #firebase_ui_firestore: ^1.7.0
   # Add Firebase UI OAuth packages
   firebase_ui_oauth_google: ^1.2.13
   firebase_ui_oauth_apple: ^1.2.13
