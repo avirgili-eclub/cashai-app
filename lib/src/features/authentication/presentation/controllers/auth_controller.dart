@@ -128,19 +128,37 @@ class AuthController extends StateNotifier<AuthState> {
         final username = loginData.username;
         final userEmail = loginData.email;
 
+        // Forzar a true para pruebas de onboarding (quitar en producción)
+        final isFirstLogin =
+            loginData.isFirstLogin; //true; // loginData.isFirstLogin;
+
         developer.log(
-            'Login successful, setting user session with userId: $userId',
+            'Login successful, setting user session with userId: $userId, isFirstLogin: $isFirstLogin',
             name: 'auth_controller');
 
-        _userSession.setUserSession(
+        // Actualizar sesión de usuario con el estado de onboarding
+        _userSession.setUserSessionAfterLogin(
           userId: userId,
           token: token,
           username: username,
           email: userEmail,
+          isFirstLogin: isFirstLogin,
         );
 
-        // Make sure splash screen is active
-        _ref.read(postLoginSplashStateProvider.notifier).showSplash();
+        // Handle first login state
+        if (isFirstLogin) {
+          developer.log('This is user\'s first login, showing onboarding',
+              name: 'auth_controller');
+          // Aquí es donde mostramos onboarding
+          _ref.read(postLoginSplashStateProvider.notifier).showOnboarding();
+          developer.log('Called showOnboarding on postLoginSplashStateProvider',
+              name: 'auth_controller');
+        } else {
+          // Regular splash for returning users
+          _ref.read(postLoginSplashStateProvider.notifier).showSplash();
+          developer.log('Called showSplash on postLoginSplashStateProvider',
+              name: 'auth_controller');
+        }
       } else {
         developer.log('Warning: Response data is null',
             name: 'auth_controller');

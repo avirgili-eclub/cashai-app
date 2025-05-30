@@ -147,6 +147,8 @@ class AuthRepositoryImpl implements AuthRepository {
       Map<String, dynamic> responseBody;
       try {
         responseBody = jsonDecode(response.body);
+        developer.log('Parsed login JSON: $responseBody',
+            name: 'auth_repository');
       } catch (e) {
         developer.log('Failed to parse login JSON: ${response.body}',
             name: 'auth_repository', error: e);
@@ -164,9 +166,12 @@ class AuthRepositoryImpl implements AuthRepository {
 
         // Now parse the data field as LoginResponseDTO
         if (apiResponse.data != null) {
+          developer.log('Parsed ApiResponseDTO: $apiResponse.data',
+              name: 'auth_repository');
           // Convert nested data to LoginResponseDTO
           final loginData = LoginResponseDTO.fromJson(apiResponse.data!);
-
+          developer.log('Parsed LoginResponseDTO: $loginData',
+              name: 'auth_repository');
           // Return as ApiResponseDTO<LoginResponseDTO>
           return ApiResponseDTO<LoginResponseDTO>(
             success: apiResponse.success,

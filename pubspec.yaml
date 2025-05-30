@@ -55,6 +55,7 @@ dependencies:
   crypto: ^3.0.3
   flutter_secure_storage: ^8.0.0
   jailbreak_root_detection: ^1.1.6
+  concentric_transition: ^1.0.3
 
 dev_dependencies:
   flutter_test:
@@ -74,5 +75,4 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   assets:
-    - assets/time-tracking.svg
     - assets/images/

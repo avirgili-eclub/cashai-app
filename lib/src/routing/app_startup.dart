@@ -24,6 +24,10 @@ Future<void> appStartup(Ref ref) async {
     await Firebase.initializeApp();
     developer.log('Firebase initialized successfully', name: 'app_startup');
 
+    // Initialize the UserSessionNotifier to load data from SharedPreferences
+    await ref.read(userSessionNotifierProvider.notifier).initialize();
+    developer.log('UserSessionNotifier initialized', name: 'app_startup');
+
     // Security services are already initialized in main.dart
     // Just check device security status
     final securityChecker = SecurityChecker();

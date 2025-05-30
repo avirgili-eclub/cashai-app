@@ -7,12 +7,12 @@ part of 'post_login_splash_provider.dart';
 // **************************************************************************
 
 String _$postLoginSplashStateHash() =>
-    r'8c6f1d993a101d3d2d48a1678050dc5cc6905aef';
+    r'3962bc23a3f61ea5a9dfba0920a4d66aee878d8d';
 
 /// See also [PostLoginSplashState].
 @ProviderFor(PostLoginSplashState)
-final postLoginSplashStateProvider =
-    AutoDisposeNotifierProvider<PostLoginSplashState, bool>.internal(
+final postLoginSplashStateProvider = AutoDisposeNotifierProvider<
+    PostLoginSplashState, PostLoginNavigationState>.internal(
   PostLoginSplashState.new,
   name: r'postLoginSplashStateProvider',
   debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
@@ -22,6 +22,6 @@ final postLoginSplashStateProvider =
   allTransitiveDependencies: null,
 );
 
-typedef _$PostLoginSplashState = AutoDisposeNotifier<bool>;
+typedef _$PostLoginSplashState = AutoDisposeNotifier<PostLoginNavigationState>;
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package

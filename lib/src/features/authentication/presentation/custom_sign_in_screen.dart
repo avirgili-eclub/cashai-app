@@ -112,26 +112,21 @@ class _CustomSignInScreenState extends ConsumerState<CustomSignInScreen> {
           final isFirstLogin = response.data?.isFirstLogin ?? false;
 
           if (isFirstLogin) {
-            developer.log('This is the user\'s first login',
+            developer.log('This is the user\'s first login, showing onboarding',
                 name: 'custom_sign_in_screen');
-            // You can add special handling for first-time users here
-            // Such as showing a welcome tutorial or collecting additional info
+            // Set state to show onboarding instead of regular splash
+            ref.read(postLoginSplashStateProvider.notifier).showOnboarding();
+          } else {
+            // Ensure splash is visible for returning users
+            ref.read(postLoginSplashStateProvider.notifier).showSplash();
           }
 
-          // Ensure splash is visible
-          ref.read(postLoginSplashStateProvider.notifier).showSplash();
-          developer.log('Splash activated again before navigation',
+          developer.log('Navigation to dashboard initiated',
               name: 'custom_sign_in_screen');
 
-          // Check mounted before UI operations
-          if (!mounted) return;
-
-          // Navigate directly to dashboard - no need for intermediate splash
-          // since dashboard will show splash until data loads
+          // Navigate to dashboard (which will conditionally show onboarding or splash)
           ref.invalidate(goRouterProvider);
           context.go('/dashboard');
-          developer.log('Navigation to dashboard initiated with splash active',
-              name: 'custom_sign_in_screen');
         } else {
           // Login failure handling
           if (!mounted) return;

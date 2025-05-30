@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/auth/providers/user_session_provider.dart';
 import '../../../../core/styles/app_styles.dart';
 import '../../../../routing/app_router.dart';
+import '../../../onboarding/presentation/screens/onboarding_screen.dart';
 import '../../domain/services/dashboard_data_service.dart';
 import '../controllers/balance_controller.dart';
 import '../controllers/transaction_controller.dart';
@@ -167,8 +168,33 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     developer.log('Building DashboardScreen', name: 'dashboard_screen');
     final userSession = ref.watch(userSessionNotifierProvider);
 
-    // Check all splash conditions
-    final showSplashFromProvider = ref.watch(postLoginSplashStateProvider);
+    // Verificar si el usuario ha completado el onboarding
+    final hasCompletedOnboarding = userSession.hasCompletedOnboarding;
+    developer.log(
+        'Dashboard build: userSession.hasCompletedOnboarding=$hasCompletedOnboarding',
+        name: 'dashboard_screen');
+
+    // Check navigation state from the provider
+    final navigationState = ref.watch(postLoginSplashStateProvider);
+    developer.log('Navigation state from provider: $navigationState',
+        name: 'dashboard_screen');
+
+    // Determine which screen to show
+    final showSplashFromProvider =
+        navigationState == PostLoginNavigationState.splash;
+    final showOnboarding =
+        navigationState == PostLoginNavigationState.onboarding;
+
+    developer.log(
+        'Show splash: $showSplashFromProvider, Show onboarding: $showOnboarding',
+        name: 'dashboard_screen');
+
+    // If onboarding is needed, render the onboarding screen
+    if (showOnboarding || !hasCompletedOnboarding) {
+      developer.log('Showing OnboardingScreen', name: 'dashboard_screen');
+      return const OnboardingScreen();
+    }
+
     final showSplash = showSplashFromProvider ||
         _isDataLoading ||
         _forceShowSplash ||

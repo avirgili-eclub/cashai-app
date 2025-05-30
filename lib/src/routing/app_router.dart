@@ -23,6 +23,9 @@ import '../features/dashboard/presentation/screens/all_transactions_screen.dart'
 import '../features/transactions/presentation/screens/add_transaction_screen.dart';
 import '../core/auth/providers/user_session_provider.dart';
 import '../features/user/presentation/screens/user_profile_screen.dart';
+import '../features/onboarding/presentation/screens/onboarding_screen.dart';
+import '../features/dashboard/presentation/providers/post_login_splash_provider.dart';
+import 'dart:developer' as developer;
 
 part 'app_router.g.dart';
 
@@ -33,7 +36,8 @@ final _dashboardNavigatorKey =
     GlobalKey<NavigatorState>(debugLabel: 'dashboard');
 
 enum AppRoute {
-  // Remove onboarding
+  // Add onboarding route
+  onboarding,
   signIn,
   profile,
   // Finance app routes
@@ -83,16 +87,25 @@ GoRouter goRouter(Ref ref) {
   final authRepository = ref.watch(authRepositoryProvider);
   final userSession = ref.watch(userSessionNotifierProvider);
   final jwtRefreshListenable = ref.watch(jwtAuthRefreshListenableProvider);
+  final navigationState = ref.watch(postLoginSplashStateProvider);
 
   // Get the initial route from initialRoute provider
   final initialRoute = ref.watch(initialRouteProvider);
+
+  // Log state for debugging
+  developer.log(
+      'Creating router: hasCompletedOnboarding=${userSession.hasCompletedOnboarding}, navigationState=$navigationState',
+      name: 'app_router');
+
+  // Check if user needs to see onboarding
+  final shouldShowOnboarding = !userSession.hasCompletedOnboarding ||
+      navigationState == PostLoginNavigationState.onboarding;
 
   return GoRouter(
     initialLocation: initialRoute,
     navigatorKey: _rootNavigatorKey,
     debugLogDiagnostics: true,
     redirect: (context, state) {
-      // Remove onboarding check code
       final path = state.uri.path;
 
       // Check both Firebase auth and JWT token authentication
@@ -108,6 +121,16 @@ GoRouter goRouter(Ref ref) {
       debugPrint(
           'Firebase auth: $isFirebaseLoggedIn, JWT auth: $hasJwtToken, path: $path');
 
+      // First check - if user needs onboarding and is trying to go to dashboard
+      if (shouldShowOnboarding &&
+          (path.startsWith('/dashboard') || path == '/')) {
+        developer.log(
+            'Redirecting to onboarding: user needs to complete onboarding',
+            name: 'app_router');
+        return '/onboarding';
+      }
+
+      // Regular authentication redirects
       if (isLoggedIn) {
         if (path.startsWith('/signIn')) {
           return '/dashboard'; // Redirect to dashboard when logged in
@@ -117,7 +140,8 @@ GoRouter goRouter(Ref ref) {
         if (path.startsWith('/account') ||
             path.startsWith('/expenses') ||
             path.startsWith('/incomes') ||
-            path.startsWith('/dashboard')) {
+            path.startsWith('/dashboard') ||
+            path.startsWith('/onboarding')) {
           return '/signIn';
         }
       }
@@ -127,6 +151,14 @@ GoRouter goRouter(Ref ref) {
     refreshListenable: GoRouterRefreshStream(authRepository.authStateChanges())
         .combineListenable(jwtRefreshListenable),
     routes: [
+      // Add onboarding route
+      GoRoute(
+        path: '/onboarding',
+        name: AppRoute.onboarding.name,
+        pageBuilder: (context, state) => const NoTransitionPage(
+          child: OnboardingScreen(),
+        ),
+      ),
       // Finance app routes
       GoRoute(
         path: '/dashboard',
