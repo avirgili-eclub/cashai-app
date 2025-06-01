@@ -100,8 +100,10 @@ class UserSessionNotifier extends _$UserSessionNotifier {
       token: state.token,
       username: state.username,
       email: state.email,
-      hasCompletedOnboarding: state.hasCompletedOnboarding,
+      hasCompletedOnboarding: true,
     );
+    developer.log('Onboarding marked as completed, state updated',
+        name: 'user_session');
   }
 
   Future<void> clearSession() async {
@@ -160,7 +162,7 @@ class UserSessionNotifier extends _$UserSessionNotifier {
     bool hasCompletedOnboarding = !isFirstLogin;
 
     // Para inicios de sesión por primera vez, siempre queremos mostrar onboarding
-    if (isFirstLogin && _prefs != null) {
+    if (isFirstLogin) {
       await _prefs!.setBool('hasCompletedOnboarding', false);
       developer.log(
           'Setting hasCompletedOnboarding to FALSE in SharedPreferences',

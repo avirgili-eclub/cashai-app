@@ -1,11 +1,9 @@
-import 'package:concentric_transition/concentric_transition.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/auth/providers/user_session_provider.dart';
-import '../../../../core/styles/app_styles.dart';
 import '../../../dashboard/presentation/providers/post_login_splash_provider.dart';
 
 // State provider to store onboarding user data
@@ -690,7 +688,13 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     ref.read(postLoginSplashStateProvider.notifier).goToDashboard();
 
     // Navigate to dashboard
-    context.go('/dashboard');
+    // Use Future.delayed to ensure state changes have propagated
+    Future.delayed(Duration(milliseconds: 100), () {
+      // Navigate to dashboard
+      if (context.mounted) {
+        context.go('/dashboard');
+      }
+    });
   }
 }
 
