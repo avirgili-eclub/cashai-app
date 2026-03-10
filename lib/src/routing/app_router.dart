@@ -122,11 +122,13 @@ GoRouter goRouter(Ref ref) {
           'Firebase auth: $isFirebaseLoggedIn, JWT auth: $hasJwtToken, path: $path');
 
       // First check - if user needs onboarding and is trying to go to dashboard
+      developer.log(
+          '[FLOW] router redirect: path=$path shouldShowOnboarding=$shouldShowOnboarding hasCompleted=${userSession.hasCompletedOnboarding} navState=$navigationState isLoggedIn=$isLoggedIn',
+          name: 'ONBOARDING_FLOW');
       if (shouldShowOnboarding &&
           (path.startsWith('/dashboard') || path == '/')) {
-        developer.log(
-            'Redirecting to onboarding: user needs to complete onboarding',
-            name: 'app_router');
+        developer.log('[FLOW] router: → redirecting to /onboarding',
+            name: 'ONBOARDING_FLOW');
         return '/onboarding';
       }
 

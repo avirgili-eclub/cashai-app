@@ -189,9 +189,14 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         'Show splash: $showSplashFromProvider, Show onboarding: $showOnboarding',
         name: 'dashboard_screen');
 
+    developer.log(
+        '[FLOW] DashboardScreen.build: hasCompletedOnboarding=$hasCompletedOnboarding showOnboarding=$showOnboarding navState=$navigationState',
+        name: 'ONBOARDING_FLOW');
+
     // If onboarding is needed, render the onboarding screen
     if (showOnboarding || !hasCompletedOnboarding) {
-      developer.log('Showing OnboardingScreen', name: 'dashboard_screen');
+      developer.log('[FLOW] DashboardScreen: → rendering OnboardingScreen inline',
+          name: 'ONBOARDING_FLOW');
       return const OnboardingScreen();
     }
 

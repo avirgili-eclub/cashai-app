@@ -105,11 +105,6 @@ class AuthController extends StateNotifier<AuthState> {
     try {
       state = state.copyWith(isLoading: true, error: null);
 
-      // Set splash screen to show before login attempt
-      _ref.read(postLoginSplashStateProvider.notifier).showSplash();
-      developer.log('Splash screen activated for login',
-          name: 'auth_controller');
-
       // Make the API call with proper error handling and timeout
       final response = await _authRepository.login(email, password).timeout(
         const Duration(seconds: 45),
@@ -128,13 +123,11 @@ class AuthController extends StateNotifier<AuthState> {
         final username = loginData.username;
         final userEmail = loginData.email;
 
-        // Forzar a true para pruebas de onboarding (quitar en producción)
-        final isFirstLogin =
-            loginData.isFirstLogin; //true; // loginData.isFirstLogin;
+        final isFirstLogin = loginData.isFirstLogin;
 
         developer.log(
-            'Login successful, setting user session with userId: $userId, isFirstLogin: $isFirstLogin',
-            name: 'auth_controller');
+            '[FLOW] auth_controller: isFirstLogin=$isFirstLogin userId=$userId',
+            name: 'ONBOARDING_FLOW');
 
         // Actualizar sesión de usuario con el estado de onboarding
         _userSession.setUserSessionAfterLogin(
@@ -147,9 +140,8 @@ class AuthController extends StateNotifier<AuthState> {
 
         // Handle first login state
         if (isFirstLogin) {
-          developer.log('This is user\'s first login, showing onboarding',
-              name: 'auth_controller');
-          // Aquí es donde mostramos onboarding
+          developer.log('[FLOW] auth_controller: → showOnboarding()',
+              name: 'ONBOARDING_FLOW');
           _ref.read(postLoginSplashStateProvider.notifier).showOnboarding();
           developer.log('Called showOnboarding on postLoginSplashStateProvider',
               name: 'auth_controller');

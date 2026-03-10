@@ -6,18 +6,21 @@ import '../../domain/entities/top_category.dart';
 import '../../domain/repositories/balance_repository.dart';
 import '../datasources/firebase_balance_datasource.dart';
 import '../../../../features/user/data/datasources/firebase_user_profile_datasource.dart';
+import '../../../categories/data/datasources/firebase_category_datasource.dart';
 
 part 'balance_repository_impl.g.dart';
 
 class BalanceRepositoryImpl implements BalanceRepository {
   final FirebaseBalanceDataSource dataSource;
   final FirebaseUserProfileDataSource userProfileDataSource;
+  final FirebaseCategoryDataSource categoryDataSource;
   final String userId;
   final String token;
 
   BalanceRepositoryImpl({
     required this.dataSource,
     required this.userProfileDataSource,
+    required this.categoryDataSource,
     required this.userId,
     required this.token,
   });
@@ -78,42 +81,30 @@ class BalanceRepositoryImpl implements BalanceRepository {
           await dataSource.getTopCategories(userId, limit: limit);
       developer.log('Successfully retrieved ${categories.length} categories',
           name: 'balance_repository');
+
+      if (categories.isEmpty) {
+        developer.log(
+            'No top categories found, falling back to get-all',
+            name: 'balance_repository');
+        try {
+          final allCategories =
+              await categoryDataSource.getAllCategories(userId);
+          developer.log(
+              'Fallback returned ${allCategories.length} categories',
+              name: 'balance_repository');
+          return allCategories;
+        } catch (fallbackError) {
+          developer.log('Fallback also failed: $fallbackError',
+              name: 'balance_repository');
+          return [];
+        }
+      }
+
       return categories;
     } catch (e, stack) {
       developer.log('Error getting categories: $e',
           name: 'balance_repository', error: e, stackTrace: stack);
-
-      // Log fallback to mock data
-      developer.log('Fallback to mock data for categories',
-          name: 'balance_repository');
-
-      // Fallback to mock data in case of error during development
-      return [
-        TopCategory(
-          id: 1,
-          name: 'Supermercado',
-          emoji: '🛒',
-          amount: 1450000,
-          percentage: 35.0,
-          expenseCount: 12,
-        ),
-        TopCategory(
-          id: 2,
-          name: 'Restaurantes',
-          emoji: '🍔',
-          amount: 850000,
-          percentage: 20.5,
-          expenseCount: 8,
-        ),
-        TopCategory(
-          id: 3,
-          name: 'Transporte',
-          emoji: '🚗',
-          amount: 650000,
-          percentage: 15.7,
-          expenseCount: 15,
-        ),
-      ];
+      return [];
     }
   }
 }
@@ -121,31 +112,29 @@ class BalanceRepositoryImpl implements BalanceRepository {
 @Riverpod(keepAlive: true)
 BalanceRepository balanceRepositoryImpl(BalanceRepositoryImplRef ref) {
   final dataSource = ref.watch(balanceDataSourceProvider);
-  final userProfileDataSource =
-      ref.watch(userProfileDataSourceProvider); // Add this
+  final userProfileDataSource = ref.watch(userProfileDataSourceProvider);
+  final categoryDataSource = ref.watch(categoryDataSourceProvider);
   final userSession = ref.watch(userSessionNotifierProvider);
 
   // Check if user is properly authenticated
   if (userSession.userId == null || userSession.isEmpty) {
-    // Log the issue
     developer.log('User not authenticated when creating balance repository',
         name: 'balance_repository');
 
-    // Return a repository that will throw errors when accessed
     return BalanceRepositoryImpl(
       dataSource: dataSource,
-      userProfileDataSource: userProfileDataSource, // Add this
-      userId:
-          '', // Empty string that will trigger proper error handling in methods
-      token: '', // Empty token
+      userProfileDataSource: userProfileDataSource,
+      categoryDataSource: categoryDataSource,
+      userId: '',
+      token: '',
     );
   }
 
-  // User is authenticated, return normal repository
   return BalanceRepositoryImpl(
     dataSource: dataSource,
-    userProfileDataSource: userProfileDataSource, // Add this
+    userProfileDataSource: userProfileDataSource,
+    categoryDataSource: categoryDataSource,
     userId: userSession.userId!,
-    token: userSession.token ?? '', // Add token
+    token: userSession.token ?? '',
   );
 }

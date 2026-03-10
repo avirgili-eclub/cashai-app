@@ -172,6 +172,13 @@ class AuthRepositoryImpl implements AuthRepository {
           final loginData = LoginResponseDTO.fromJson(apiResponse.data!);
           developer.log('Parsed LoginResponseDTO: $loginData',
               name: 'auth_repository');
+          // [FLOW] Log raw data map and parsed isFirstLogin
+          developer.log(
+              '[FLOW] raw data map from API: ${apiResponse.data}',
+              name: 'ONBOARDING_FLOW');
+          developer.log(
+              '[FLOW] loginData.isFirstLogin = ${loginData.isFirstLogin}',
+              name: 'ONBOARDING_FLOW');
           // Return as ApiResponseDTO<LoginResponseDTO>
           return ApiResponseDTO<LoginResponseDTO>(
             success: apiResponse.success,

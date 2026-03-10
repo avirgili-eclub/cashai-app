@@ -9,7 +9,6 @@ import 'dart:async';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'dart:developer' as developer;
 import '../../../core/auth/providers/user_session_provider.dart';
-import '../../../routing/app_router.dart';
 import '../presentation/controllers/auth_controller.dart';
 import '../../../features/dashboard/presentation/providers/post_login_splash_provider.dart';
 import '../../../widgets/app_splash_screen.dart';
@@ -81,11 +80,6 @@ class _CustomSignInScreenState extends ConsumerState<CustomSignInScreen> {
         developer.log('Attempting login with email: ${_emailController.text}',
             name: 'custom_sign_in_screen');
 
-        // Set splash state before API call
-        ref.read(postLoginSplashStateProvider.notifier).showSplash();
-        developer.log('Splash screen activated before login attempt',
-            name: 'custom_sign_in_screen');
-
         final loginFuture = ref.read(authControllerProvider.notifier).login(
               email: _emailController.text,
               password: _passwordController.text,
@@ -111,22 +105,20 @@ class _CustomSignInScreenState extends ConsumerState<CustomSignInScreen> {
           // Check if it's the first login
           final isFirstLogin = response.data?.isFirstLogin ?? false;
 
+          developer.log(
+              '[FLOW] sign_in: response.data=${response.data}, isFirstLogin=$isFirstLogin',
+              name: 'ONBOARDING_FLOW');
+
           if (isFirstLogin) {
-            developer.log('This is the user\'s first login, showing onboarding',
-                name: 'custom_sign_in_screen');
-            // Set state to show onboarding instead of regular splash
-            ref.read(postLoginSplashStateProvider.notifier).showOnboarding();
+            developer.log('[FLOW] sign_in: → context.go(/onboarding)',
+                name: 'ONBOARDING_FLOW');
+            context.go('/onboarding');
           } else {
-            // Ensure splash is visible for returning users
+            developer.log('[FLOW] sign_in: → showSplash + context.go(/dashboard)',
+                name: 'ONBOARDING_FLOW');
             ref.read(postLoginSplashStateProvider.notifier).showSplash();
+            context.go('/dashboard');
           }
-
-          developer.log('Navigation to dashboard initiated',
-              name: 'custom_sign_in_screen');
-
-          // Navigate to dashboard (which will conditionally show onboarding or splash)
-          ref.invalidate(goRouterProvider);
-          context.go('/dashboard');
         } else {
           // Login failure handling
           if (!mounted) return;
