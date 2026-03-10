@@ -1,0 +1,115 @@
+# ─────────────────────────────────────────────────────────────
+# Copiar este archivo a .github/workflows/update-activity.yml
+# en CADA repo privado (startup-os, alva-agentic, ucashai)
+# ─────────────────────────────────────────────────────────────
+name: Update Public Activity Feed
+
+on:
+  push:
+    branches: [main, master, develop]
+
+jobs:
+  update-activity:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout current repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 5
+
+      - name: Set repo display name
+        id: meta
+        run: |
+          REPO="${{ github.event.repository.name }}"
+          case "$REPO" in
+            startup-os)   DISPLAY="Startup OS"    ;;
+            alva-agentic) DISPLAY="Alva Agentic"  ;;
+            ucashai)      DISPLAY="UcashAI"       ;;
+            # Fallback: reemplaza guiones por espacios y capitaliza
+            *) DISPLAY=$(echo "$REPO" | sed 's/-/ /g' | sed 's/\b./\u&/g') ;;
+          esac
+          echo "display=$DISPLAY" >> $GITHUB_OUTPUT
+          echo "repo=$REPO"       >> $GITHUB_OUTPUT
+
+      - name: Extract recent commits as JSON
+        id: commits
+        run: |
+          COMMITS=$(git log -5 \
+            --pretty=format:'{"hash":"%h","subject":"%s","timestamp":"%aI"}' \
+            | jq -Rs '
+                split("\n")
+                | map(select(length > 0))
+                | map(fromjson)
+              ')
+          # Escape para pasar entre steps
+          echo "data<<EOF" >> $GITHUB_OUTPUT
+          echo "$COMMITS"  >> $GITHUB_OUTPUT
+          echo "EOF"       >> $GITHUB_OUTPUT
+
+      - name: Checkout activity repo
+        uses: actions/checkout@v4
+        with:
+          repository: avirgili-eclub/avirgili-activity
+          token: ${{ secrets.ACTIVITY_WRITER_TOKEN }}
+          path: activity-repo
+
+      - name: Merge and update activity.json
+        run: |
+          cd activity-repo
+
+          REPO="${{ steps.meta.outputs.repo }}"
+          DISPLAY="${{ steps.meta.outputs.display }}"
+
+          # Mapear conventional commit type desde el subject
+          NEW_COMMITS=$(echo '${{ steps.commits.outputs.data }}' | jq \
+            --arg repo    "$REPO" \
+            --arg display "$DISPLAY" '
+            map({
+              hash:         .hash,
+              type: (
+                if   .subject | test("^feat[!(:]")     then "feat"
+                elif .subject | test("^fix[!(:]")      then "fix"
+                elif .subject | test("^refactor[!(:]") then "refactor"
+                elif .subject | test("^chore[!(:]")    then "chore"
+                elif .subject | test("^docs[!(:]")     then "docs"
+                elif .subject | test("^test[!(:]")     then "test"
+                elif .subject | test("^perf[!(:]")     then "perf"
+                elif .subject | test("^style[!(:]")    then "style"
+                else "other"
+                end
+              ),
+              message: (.subject | gsub("^[a-z]+[!(:]([^):]*[):])?\\s*"; "")),
+              repo:         $repo,
+              repo_display: $display,
+              timestamp:    .timestamp
+            })
+          ')
+
+          # Combinar nuevos con existentes, deduplicar por hash, top 20 más recientes
+          CURRENT=$(cat activity.json)
+          UPDATED=$(echo "$CURRENT" | jq \
+            --argjson new "$NEW_COMMITS" \
+            --arg now "$(date -u +%Y-%m-%dT%H:%M:%SZ)" '
+            .updated_at = $now |
+            .commits = (
+              [$new[], .commits[]]
+              | unique_by(.hash)
+              | sort_by(.timestamp)
+              | reverse
+              | .[0:20]
+            )
+          ')
+
+          echo "$UPDATED" > activity.json
+          echo "Feed actualizado — commits totales: $(echo "$UPDATED" | jq '.commits | length')"
+
+      - name: Push to activity repo
+        run: |
+          cd activity-repo
+          git config user.name  "GitHub Actions"
+          git config user.email "actions@github.com"
+          git add activity.json
+          git diff --staged --quiet && echo "Sin cambios" || \
+            git commit -m "chore: update activity from ${{ github.event.repository.name }}" && \
+            git push
