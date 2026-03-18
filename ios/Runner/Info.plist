@@ -58,6 +58,8 @@
     <string>Necesitamos acceso a tu cámara para escanear tickets y facturas</string>
     <key>NSPhotoLibraryUsageDescription</key>
     <string>Necesitamos acceso a tus fotos para guardar los tickets escaneados</string>
+    <key>NSPhotoLibraryAddUsageDescription</key>
+    <string>Para guardar la imagen de tu factura en el carrete de fotos</string>
 	<key>NSFaceIDUsageDescription</key>
 	<string>Autenticación biométrica para un acceso seguro a la aplicación</string>
 	<key>UIFileSharingEnabled</key>

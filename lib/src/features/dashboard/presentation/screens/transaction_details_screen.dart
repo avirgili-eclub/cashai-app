@@ -9,6 +9,7 @@ import '../../../../core/presentation/widgets/money_text.dart';
 import '../../../../core/utils/money_formatter.dart';
 import '../../domain/entities/recent_transaction.dart';
 import '../controllers/transaction_controller.dart';
+import '../widgets/invoice_image_widget.dart';
 
 // Convert to StatefulWidget to manage edit mode
 class TransactionDetailsScreen extends ConsumerStatefulWidget {
@@ -449,6 +450,42 @@ class _TransactionDetailsScreenState
                   ],
                 ),
               ),
+
+              // Invoice image section — only shown when transaction has an image
+              if (widget.transaction?.hasInvoiceImage == true)
+                Builder(
+                  builder: (context) {
+                    final detailAsync = ref.watch(
+                        transactionDetailProvider(widget.transactionId));
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Factura',
+                            style: TextStyle(
+                              color: Colors.grey,
+                              fontSize: 14,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          detailAsync.when(
+                            loading: () => const AspectRatio(
+                              aspectRatio: 4 / 3,
+                              child: Center(
+                                  child: CircularProgressIndicator()),
+                            ),
+                            error: (e, _) => const SizedBox.shrink(),
+                            data: (detail) => InvoiceImageWidget(
+                              invoiceImageUrl: detail.invoiceImageUrl,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
 
               // Action buttons
               const SizedBox(height: 24),

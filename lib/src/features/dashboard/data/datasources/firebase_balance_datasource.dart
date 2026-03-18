@@ -196,6 +196,42 @@ class FirebaseBalanceDataSource {
     }
   }
 
+  Future<RecentTransaction> getTransactionDetail(
+      String transactionId, String userId) async {
+    final url = '$baseUrl/transactions/$transactionId?userId=$userId';
+    developer.log('Making API request to: $url',
+        name: 'transactions_datasource');
+
+    try {
+      final response = await client.get(
+        Uri.parse(url),
+        headers: {
+          'Content-Type': 'application/json; charset=utf-8',
+          'Accept': 'application/json; charset=utf-8',
+        },
+      );
+
+      developer.log('Response status code: ${response.statusCode}',
+          name: 'transactions_datasource');
+
+      if (response.statusCode == 200) {
+        developer.log('Response body: ${response.body}',
+            name: 'transactions_datasource');
+        final Map<String, dynamic> data = json.decode(response.body);
+        return RecentTransaction.fromJson(data);
+      } else {
+        developer.log('Error response: ${response.body}',
+            name: 'transactions_datasource');
+        throw Exception(
+            'Failed to load transaction detail: ${response.statusCode}');
+      }
+    } catch (e, stack) {
+      developer.log('Network error: $e',
+          name: 'transactions_datasource', error: e, stackTrace: stack);
+      throw Exception('Failed to connect to the server: $e');
+    }
+  }
+
   // New method to get transactions by category
   Future<TransactionsByCategoryDTO> getTransactionsByCategory(
     String userId,

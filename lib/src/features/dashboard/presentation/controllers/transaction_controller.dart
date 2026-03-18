@@ -9,6 +9,16 @@ import '../../data/datasources/firebase_balance_datasource.dart';
 part 'transaction_controller.g.dart';
 
 @riverpod
+Future<RecentTransaction> transactionDetail(
+  TransactionDetailRef ref,
+  String transactionId,
+) async {
+  final userSession = ref.watch(userSessionNotifierProvider);
+  final repo = ref.watch(transactionRepositoryProvider);
+  return repo.getTransactionDetail(transactionId, userSession.userId!);
+}
+
+@riverpod
 class TransactionsController extends _$TransactionsController {
   @override
   Future<List<RecentTransaction>> build() async {

@@ -71,6 +71,32 @@ class TransactionRepositoryImpl implements TransactionRepository {
   }
 
   @override
+  Future<RecentTransaction> getTransactionDetail(
+      String transactionId, String userId) async {
+    developer.log(
+        'Getting transaction detail for ID: $transactionId, userId: $userId',
+        name: 'transaction_repository');
+
+    if (userId.isEmpty) {
+      developer.log('Empty userId, cannot fetch transaction detail',
+          name: 'transaction_repository');
+      throw Exception('User ID is required to fetch transaction detail');
+    }
+
+    try {
+      final transaction =
+          await dataSource.getTransactionDetail(transactionId, userId);
+      developer.log('Successfully retrieved transaction detail',
+          name: 'transaction_repository');
+      return transaction;
+    } catch (e, stack) {
+      developer.log('Error getting transaction detail: $e',
+          name: 'transaction_repository', error: e, stackTrace: stack);
+      throw Exception('Failed to get transaction detail: $e');
+    }
+  }
+
+  @override
   Future<bool> deleteTransaction(int transactionId) async {
     developer.log(
         'Deleting transaction with ID: $transactionId for userId: $userId',

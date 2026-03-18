@@ -252,15 +252,29 @@ class _DismissibleTransactionItemState
                 ],
               ),
             ),
-            MoneyText(
-              amount: transaction.amount,
-              currency: 'Gs.',
-              isExpense: isDebit,
-              isIncome: !isDebit,
-              showSign: true,
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-              ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                MoneyText(
+                  amount: transaction.amount,
+                  currency: 'Gs.',
+                  isExpense: isDebit,
+                  isIncome: !isDebit,
+                  showSign: true,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                if (transaction.hasInvoiceImage)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Icon(
+                      Icons.receipt_long,
+                      size: 14,
+                      color: const Color(0xFF6366F1).withOpacity(0.7),
+                    ),
+                  ),
+              ],
             ),
           ],
         ),
