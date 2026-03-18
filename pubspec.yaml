@@ -56,6 +56,9 @@ dependencies:
   flutter_secure_storage: ^8.0.0
   jailbreak_root_detection: ^1.1.6
   concentric_transition: ^1.0.3
+  cached_network_image: ^3.3.0
+  share_plus: ^10.0.0
+  gal: ^2.3.0
 
 dev_dependencies:
   flutter_test:

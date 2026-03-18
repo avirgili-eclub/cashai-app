@@ -17,6 +17,8 @@ class RecentTransaction {
   final int? categoryId; // Added new property for category ID
   final String? categoryName; // Added new property for category name
   final String? title; // Added new property for title
+  final bool hasInvoiceImage; // true when transaction has an S3 invoice image
+  final String? invoiceImageUrl; // pre-signed S3 URL, only populated in detail endpoint
 
   RecentTransaction({
     required this.id,
@@ -36,6 +38,8 @@ class RecentTransaction {
     this.categoryId,
     this.categoryName,
     this.title,
+    this.hasInvoiceImage = false,
+    this.invoiceImageUrl,
   });
 
   factory RecentTransaction.fromJson(Map<String, dynamic> json) {
@@ -57,6 +61,8 @@ class RecentTransaction {
       categoryId: json['categoryId'] as int?, // Parse category ID
       categoryName: json['categoryName'] as String?, // Parse category name
       title: json['title'] as String?, // Parse title
+      hasInvoiceImage: json['hasInvoiceImage'] as bool? ?? false,
+      invoiceImageUrl: json['invoiceImageUrl'] as String?,
     );
   }
 }

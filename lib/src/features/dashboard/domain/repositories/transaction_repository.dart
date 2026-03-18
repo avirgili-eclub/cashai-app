@@ -12,6 +12,9 @@ abstract class TransactionRepository {
   });
 
   Future<bool> deleteTransaction(int transactionId);
+
+  Future<RecentTransaction> getTransactionDetail(
+      String transactionId, String userId);
 }
 
 @riverpod
