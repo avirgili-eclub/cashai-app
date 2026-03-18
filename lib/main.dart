@@ -48,7 +48,7 @@ Future<void> main() async {
   // Initialize the API configuration
   // Para forzar el uso de la URL de producción, establece isProduction como true
   // O usa const bool forceProduction = true; para pruebas de producción mientras estás en desarrollo
-  const bool forceProduction = true; // Forzar modo producción para pruebas
+  const bool forceProduction = false; // Forzar modo producción para pruebas
   ApiConfig().init(
     isProduction: forceProduction || kReleaseMode,
     // La URL personalizada solo debe usarse si realmente necesitas una URL diferente

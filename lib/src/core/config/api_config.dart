@@ -16,11 +16,11 @@ class ApiConfig {
   String? _customBaseUrl;
 
   /// Environment flag - defaults to debug mode for safety
-  bool _isProduction = true;
+  bool _isProduction = false;
 
   /// Initialize the API configuration
   void init({
-    bool isProduction = true,
+    bool isProduction = false,
     String? customBaseUrl,
   }) {
     _isProduction = isProduction;
